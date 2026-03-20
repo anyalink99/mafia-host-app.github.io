@@ -1,0 +1,16 @@
+{
+  "name": "mafia-host-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Мафия — ведущий: веб и Android (Capacitor)",
+  "scripts": {
+    "copy:www": "node scripts/copy-www.cjs",
+    "cap:sync": "npm run copy:www && npx cap sync",
+    "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icons.ps1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0"
+  }
+}

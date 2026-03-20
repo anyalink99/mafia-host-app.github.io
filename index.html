@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0c0a09">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Мафия — Ведущий</title>
+    <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/tailwind.config.js"></script>
+</head>
+<body class="bg-mafia-black text-mafia-cream antialiased">
+
+<svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+  <defs>
+    <symbol id="icon-peaceful" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+      <path d="M7 10v12" />
+    </symbol>
+    <symbol id="icon-mafia" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
+      <path d="M17 14V2" />
+    </symbol>
+    <symbol id="icon-don" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.2 8.1 16 4.4 14.4 2H9.6L8 4.4l2.8 3.7" />
+      <circle cx="12" cy="15" r="7" />
+    </symbol>
+    <symbol id="icon-sheriff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M11.051 7.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.867l-1.156-1.152a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z" />
+    </symbol>
+  </defs>
+</svg>
+
+<div id="menu-screen" class="screen active flex flex-col items-center justify-center p-6 sm:p-8">
+    <div class="absolute inset-0 z-0 bg-gradient-to-b from-mafia-blood/20 via-mafia-black to-mafia-black" style="pointer-events: none;" aria-hidden="true"></div>
+    <div class="relative z-10 text-center animate-fade-in flex flex-col items-center justify-center flex-1 min-h-0 w-full">
+        <h1 class="font-display font-bold text-4xl min-[400px]:text-5xl sm:text-6xl md:text-7xl text-mafia-gold tracking-widest drop-shadow-lg leading-tight">МАФИЯ</h1>
+        <p class="font-display text-mafia-goldLight/80 text-base sm:text-xl mt-2 tracking-widest uppercase">Ночной клуб</p>
+        <div class="mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
+            <button type="button" id="btn-setup" data-goto="setup-screen" class="w-full py-4 px-8 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-lg tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] rounded-sm shadow-lg cursor-pointer">
+                Раздать роли
+            </button>
+            <button type="button" id="btn-game" data-goto="game-screen" data-init="game" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
+                К столу (без раздачи)
+            </button>
+            <button type="button" id="btn-settings" data-goto="settings-screen" class="w-full py-3 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-gold/90 font-medium text-sm tracking-wide uppercase transition-all duration-200 rounded-sm cursor-pointer">
+                Настройки
+            </button>
+            <button type="button" id="btn-reset" data-action="full-reset" class="w-full py-3 px-5 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer transition-transform active:scale-95">
+                Сброс игры
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="settings-screen" class="screen flex flex-col min-h-0 p-4 sm:p-6 overflow-auto">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Настройки</span>
+    </div>
+    <div class="max-w-lg w-full mx-auto mt-6 space-y-8 flex-shrink-0 pb-8">
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Раздача карт</h2>
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button type="button" data-action="music-add-slot" data-slot="1" class="px-4 py-2 bg-mafia-blood/80 hover:bg-mafia-blood border border-mafia-gold/50 text-mafia-gold text-sm uppercase tracking-wider rounded cursor-pointer">Добавить треки</button>
+            </div>
+            <input type="file" id="music-files-slot-1" class="hidden" accept="audio/*" multiple aria-hidden="true">
+            <div id="music-list-slot-1"></div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Ночные действия</h2>
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button type="button" data-action="music-add-slot" data-slot="2" class="px-4 py-2 bg-mafia-blood/80 hover:bg-mafia-blood border border-mafia-gold/50 text-mafia-gold text-sm uppercase tracking-wider rounded cursor-pointer">Добавить треки</button>
+            </div>
+            <input type="file" id="music-files-slot-2" class="hidden" accept="audio/*" multiple aria-hidden="true">
+            <div id="music-list-slot-2"></div>
+        </section>
+    </div>
+</div>
+
+<div id="setup-screen" class="screen flex flex-col p-4 sm:p-6">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <div class="flex items-center gap-3">
+            <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider flex items-center gap-2 cursor-pointer">← Меню</button>
+            <button type="button" data-goto="game-screen" data-init="game" class="px-3 py-1 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 text-xs sm:text-sm uppercase tracking-wider rounded cursor-pointer">Игровой стол</button>
+        </div>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Просмотр ролей</span>
+    </div>
+    <p class="text-mafia-cream/60 text-center text-xs sm:text-sm flex-shrink-0 py-2">Нажми на карту — игрок увидит свою роль. Все открыли — игра начинается.</p>
+    <div id="card-container" class="cards-grid w-full max-w-md mx-auto overflow-hidden mt-2"></div>
+</div>
+
+<div id="role-screen" class="screen fixed inset-0 z-50 flex flex-col items-center justify-center p-6 cursor-pointer h-[100dvh]" data-close="role">
+    <div id="role-bg" class="absolute inset-0 transition-colors duration-500"></div>
+    <div class="relative z-10 flex flex-col items-center justify-center text-center">
+        <div id="role-icon-wrap" class="role-icon role-icon--large mb-4 text-mafia-gold/95 flex-shrink-0" aria-hidden="true"></div>
+        <p id="role-label" class="font-display text-mafia-gold/90 text-xl sm:text-2xl tracking-[0.3em] uppercase mb-3">Твоя роль</p>
+        <h1 id="role-name" class="font-display font-bold text-5xl sm:text-7xl md:text-8xl tracking-wider"></h1>
+        <p id="close-hint" class="mt-14 text-white/60 text-base tracking-widest uppercase" style="display: none;">Нажми в любое место — продолжить</p>
+    </div>
+</div>
+
+<div id="game-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <div class="flex items-center gap-3">
+            <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+            <button type="button" data-goto="setup-screen" class="px-3 py-1 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 text-xs sm:text-sm uppercase tracking-wider rounded cursor-pointer">Просмотр ролей</button>
+        </div>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Игровой стол</span>
+    </div>
+
+    <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0 text-center">
+        <p class="game-discussion-label text-mafia-gold/80 uppercase tracking-widest mb-1">Время на обсуждение</p>
+        <div class="flex items-center justify-center gap-3 sm:gap-5 flex-wrap">
+            <div id="timer" class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-mafia-gold tabular-nums leading-none">60</div>
+            <button type="button" id="btn-music" data-action="toggle-music" aria-label="Музыка" aria-pressed="false" class="shrink-0 w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Музыка">
+                <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </button>
+        </div>
+        <div class="flex gap-3 justify-center mt-3 flex-wrap">
+            <button type="button" id="start-btn" data-action="toggle-timer" class="px-5 py-3 bg-green-800 hover:bg-green-700 border border-green-600 text-white font-semibold rounded uppercase text-sm tracking-wider cursor-pointer">Старт</button>
+            <button type="button" data-action="reset-timer" data-seconds="60" class="px-4 py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-sm cursor-pointer">60 с</button>
+            <button type="button" data-action="reset-timer" data-seconds="30" class="px-4 py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-sm cursor-pointer">30 с</button>
+        </div>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div id="players-list" class="grid grid-cols-2 gap-2 flex-1 min-h-0 overflow-auto"></div>
+    </div>
+
+    <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
+        <h3 class="font-display text-mafia-gold text-base tracking-widest mb-2">Очередь голосования</h3>
+        <div id="voting-order" class="voting-order-queue text-mafia-cream/80 min-h-[1.5rem] mb-3 font-mono tabular-nums">—</div>
+        <button type="button" data-action="clear-voting" class="w-full py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 rounded text-sm transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" id="btn-clear-voting">Сбросить список</button>
+    </div>
+</div>
+
+<div id="modal-music-slot" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-slot-title">
+    <div class="bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-music-slot-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-4">Музыка</h2>
+        <div class="flex flex-col gap-3">
+            <button type="button" data-action="music-pick-slot" data-slot="1" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Раздача карт</button>
+            <button type="button" data-action="music-pick-slot" data-slot="2" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Ночные действия</button>
+            <button type="button" data-action="music-pick-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
+    </div>
+</div>
+<div id="modal-music-empty" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-empty-title" data-slot="">
+    <div class="bg-mafia-coal border-2 border-mafia-border rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-music-empty-title" class="font-display text-mafia-gold text-lg text-center tracking-widest mb-2">Нет треков для этого режима</h2>
+        <p class="text-mafia-cream/60 text-sm text-center mb-4">Загрузите аудиофайлы с устройства.</p>
+        <label class="block w-full py-3 text-center bg-mafia-blood/80 hover:bg-mafia-blood border border-mafia-gold/50 text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer mb-3">
+            Выбрать файлы
+            <input type="file" id="music-files-empty" class="hidden" accept="audio/*" multiple>
+        </label>
+        <button type="button" data-action="music-empty-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+    </div>
+</div>
+
+<audio id="bg-music" preload="none" playsinline></audio>
+
+<script src="js/state.js"></script>
+<script src="js/music-storage.js"></script>
+<script src="js/music.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/game.js"></script>
+<script src="js/events.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
