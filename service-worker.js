@@ -1,4 +1,5 @@
-var CACHE_NAME = 'mafia-host-static-v1';
+/** Меняйте суффикс при релизе, чтобы сбросить старый precache (опционально — см. fetch ниже). */
+var CACHE_NAME = 'mafia-host-static-v2';
 var ASSETS = [
   './',
   './index.html',
@@ -41,8 +42,48 @@ self.addEventListener('activate', function (e) {
   );
 });
 
+function isSameOrigin(url) {
+  try {
+    return new URL(url).origin === self.location.origin;
+  } catch (err) {
+    return false;
+  }
+}
+
+/** Обновления UI/логики: сначала сеть, иначе офлайн-кэш. Иначе пользователь видит старый index.html/JS/CSS после деплоя. */
+function shouldNetworkFirst(req) {
+  if (!isSameOrigin(req.url)) return false;
+  if (req.mode === 'navigate') return true;
+  var path = new URL(req.url).pathname;
+  if (/\.(html|js|css)(\?.*)?$/i.test(path)) return true;
+  return false;
+}
+
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+
+  if (shouldNetworkFirst(e.request)) {
+    e.respondWith(
+      fetch(e.request)
+        .then(function (response) {
+          if (response && response.ok && response.type === 'basic') {
+            var copy = response.clone();
+            caches.open(CACHE_NAME).then(function (cache) {
+              cache.put(e.request, copy);
+            });
+          }
+          return response;
+        })
+        .catch(function () {
+          return caches.match(e.request).then(function (cached) {
+            if (cached) return cached;
+            return caches.match('./index.html');
+          });
+        })
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(function (cached) {
       if (cached) return cached;
