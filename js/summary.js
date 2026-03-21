@@ -87,7 +87,7 @@
     if (raw === undefined || raw === null || raw === '') return 0;
     var v = parseFloat(String(raw).replace(',', '.'));
     if (isNaN(v)) return 0;
-    return Math.max(0, Math.round(v * 10) / 10);
+    return Math.round(v * 10) / 10;
   }
 
   app.formatBonusForDisplay = function (raw) {
@@ -121,14 +121,6 @@
     return true;
   };
 
-  app.serializeBestMoveTriple = function (a, b, c) {
-    var x = String(a != null ? a : '').trim();
-    var y = String(b != null ? b : '').trim();
-    var z = String(c != null ? c : '').trim();
-    if (!x && !y && !z) return '';
-    return [x, y, z].join(',');
-  };
-
   app.countCompleteBestMoves = function () {
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') return 0;
     var c = 0;
@@ -151,11 +143,18 @@
     return true;
   };
 
+  app.serializeBestMoveTriple = function (a, b, c) {
+    var x = String(a != null ? a : '').trim();
+    var y = String(b != null ? b : '').trim();
+    var z = String(c != null ? c : '').trim();
+    if (!x && !y && !z) return '';
+    return [x, y, z].join(',');
+  };
+
   app.applySummaryBonusDelta = function (delta) {
     var inp = document.getElementById('modal-summary-bonus');
     if (!inp || inp.disabled) return;
     var v = parseBonusFloat(inp.value) + delta;
-    if (v < 0) v = 0;
     v = Math.round(v * 10) / 10;
     inp.value = v % 1 === 0 ? String(Math.round(v)) : String(v).replace('.', ',');
   };
@@ -305,6 +304,53 @@
     }
   }
 
+  function renderModalSummaryRoleRadios(selectedCode, enabled) {
+    var row = document.getElementById('modal-summary-role-icons');
+    if (!row) return;
+    row.innerHTML = '';
+    var opts = [
+      { value: 'peaceful', label: 'Мирный житель' },
+      { value: 'mafia', label: 'Мафия' },
+      { value: 'don', label: 'Дон' },
+      { value: 'sheriff', label: 'Шериф' },
+    ];
+    for (var i = 0; i < opts.length; i++) {
+      var o = opts[i];
+      var selected = enabled && o.value === selectedCode;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', selected ? 'true' : 'false');
+      b.setAttribute('aria-label', o.label);
+      b.dataset.summaryRole = o.value;
+      b.disabled = !enabled;
+      b.className =
+        'flex shrink-0 cursor-pointer items-center justify-center rounded-lg border p-1 outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-mafia-gold/40 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:p-1.5 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 ' +
+        (selected
+          ? 'border-mafia-gold/65 bg-black/20 shadow-[inset_0_0_0_1px_rgba(212,175,55,0.35)]'
+          : 'border-mafia-border bg-mafia-coal/80');
+      var wrap = document.createElement('div');
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.className = summaryRoleIconWrapClass(o.value);
+      wrap.innerHTML = summaryWinningTeamIconWrapHtml(summaryRoleCodeToIconId(o.value));
+      b.appendChild(wrap);
+      b.onclick = (function (val, en) {
+        return function () {
+          if (!en) return;
+          renderModalSummaryRoleRadios(val, en);
+        };
+      })(o.value, enabled);
+      row.appendChild(b);
+    }
+  }
+
+  function getModalSummarySelectedRoleCode() {
+    var row = document.getElementById('modal-summary-role-icons');
+    if (!row) return null;
+    var picked = row.querySelector('[role="radio"][aria-checked="true"]');
+    return picked && picked.dataset.summaryRole ? picked.dataset.summaryRole : null;
+  }
+
   function sortedLog() {
     if (!Array.isArray(app.gameLog)) return [];
     return app.gameLog.slice().sort(function (a, b) {
@@ -373,12 +419,13 @@
     if (!p) return;
     var seatIndex = app.players.indexOf(p);
     var title = document.getElementById('modal-summary-player-title');
+    var nickInp = document.getElementById('modal-summary-nick');
     var bonusInp = document.getElementById('modal-summary-bonus');
     var noteTa = document.getElementById('modal-summary-bonus-note');
-    var roleSel = document.getElementById('modal-summary-role');
     var hint = document.getElementById('modal-summary-locked-hint');
     var unlocked = app.summaryWinnerChosen();
     if (title) title.textContent = 'Игрок №' + playerId;
+    if (nickInp) nickInp.value = p.nick != null ? String(p.nick) : '';
     m.dataset.playerId = String(playerId);
     var bk = String(playerId);
     if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
@@ -408,14 +455,20 @@
       deltaBtns[db].disabled = !unlocked;
     }
     if (noteTa) noteTa.value = app.bonusNoteByPlayerId[bk] != null ? String(app.bonusNoteByPlayerId[bk]) : '';
-    if (roleSel) {
-      roleSel.value = app.getEffectiveSummaryRoleCode(playerId, seatIndex);
-      roleSel.disabled = !unlocked;
+    var bonusSection = document.getElementById('modal-summary-bonus-section');
+    var noteSection = document.getElementById('modal-summary-bonus-note-section');
+    if (bonusSection) bonusSection.style.display = unlocked ? '' : 'none';
+    if (noteSection) noteSection.style.display = unlocked ? '' : 'none';
+    var roleSection = document.getElementById('modal-summary-role-section');
+    if (roleSection) roleSection.style.display = unlocked ? '' : 'none';
+    if (unlocked) {
+      renderModalSummaryRoleRadios(app.getEffectiveSummaryRoleCode(playerId, seatIndex), true);
+    } else {
+      var roleRow = document.getElementById('modal-summary-role-icons');
+      if (roleRow) roleRow.innerHTML = '';
     }
     if (bonusInp) bonusInp.disabled = !unlocked;
     if (noteTa) noteTa.disabled = !unlocked;
-    var saveBtn = document.getElementById('modal-summary-save');
-    if (saveBtn) saveBtn.disabled = !unlocked && !showBm;
     if (hint) hint.style.display = unlocked ? 'none' : '';
     app.modalSetOpen(m, true);
   };
@@ -425,6 +478,12 @@
     if (!m) return;
     var pid = parseInt(m.dataset.playerId, 10);
     if (isNaN(pid)) return;
+    var pl = app.players.find(function (x) {
+      return x.id === pid;
+    });
+    if (!pl) return;
+    var nickInp = document.getElementById('modal-summary-nick');
+    if (nickInp) pl.nick = nickInp.value.slice(0, 32);
     var unlocked = app.summaryWinnerChosen();
     var showBm = app.showSummaryBestMoveField(pid);
     var bm1 = document.getElementById('modal-summary-bestmove-1');
@@ -434,27 +493,34 @@
       showBm && bm1 && bm2 && bm3 ? app.serializeBestMoveTriple(bm1.value, bm2.value, bm3.value) : '';
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
     if (!unlocked) {
-      if (!showBm) return;
-      app.bestMoveByPlayerId[String(pid)] = tripleStr;
+      if (!showBm) {
+        app.saveState();
+        app.hideSummaryPlayerModal();
+        app.renderSummary();
+        return;
+      }
+      if (bm1 && bm2 && bm3) {
+        app.bestMoveByPlayerId[String(pid)] = tripleStr;
+      }
       app.saveState();
       app.hideSummaryPlayerModal();
       app.renderSummary();
       return;
     }
+    if (showBm && bm1 && bm2 && bm3) {
+      app.bestMoveByPlayerId[String(pid)] = tripleStr;
+    }
     var bonusInp = document.getElementById('modal-summary-bonus');
     var noteTa = document.getElementById('modal-summary-bonus-note');
-    var roleSel = document.getElementById('modal-summary-role');
     var v = bonusInp ? parseBonusFloat(bonusInp.value) : 0;
     if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
     if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
     if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
     app.bonusPointsByPlayerId[String(pid)] = v;
     app.bonusNoteByPlayerId[String(pid)] = noteTa ? noteTa.value : '';
-    if (roleSel && roleSel.value) {
-      app.summaryRoleByPlayerId[String(pid)] = roleSel.value;
-    }
-    if (showBm && bm1 && bm2 && bm3) {
-      app.bestMoveByPlayerId[String(pid)] = tripleStr;
+    var roleCode = getModalSummarySelectedRoleCode();
+    if (roleCode) {
+      app.summaryRoleByPlayerId[String(pid)] = roleCode;
     }
     app.saveState();
     app.hideSummaryPlayerModal();

@@ -154,7 +154,7 @@
           if (sid && app.showPlayerActionsModal) {
             app.showPlayerActionsModal(parseInt(sid, 10));
           }
-        } else if (action === 'player-modal-cancel') {
+        } else if (action === 'player-modal-save') {
           if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
         } else if (action === 'player-modal-foul') {
           var modalF = document.getElementById('modal-player-actions');
@@ -194,8 +194,6 @@
           if (!sumScr || !sumScr.classList.contains('active')) return;
           var spid = t.getAttribute('data-player-id');
           if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(parseInt(spid, 10));
-        } else if (action === 'summary-modal-cancel') {
-          if (app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
         } else if (action === 'summary-modal-save') {
           if (app.applySummaryPlayerModal) app.applySummaryPlayerModal();
         } else if (action === 'summary-bonus-delta') {
