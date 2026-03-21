@@ -161,10 +161,6 @@
     if (revealed >= app.getAvailableCount()) {
       app.sortCardsByRevealOrder();
       app.updateCardNumbers();
-      app.showScreen('game-screen');
-      app.renderPlayers();
-      const timerEl = document.getElementById('timer');
-      if (timerEl) timerEl.textContent = app.timeLeft;
     }
   };
 })(window.MafiaApp);

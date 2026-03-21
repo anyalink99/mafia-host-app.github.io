@@ -4,8 +4,13 @@ window.MafiaApp = window.MafiaApp || {};
   app.STORAGE_KEY = 'mafia_host_state';
 
   app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
-  app.players = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, fouls: 0 }));
+  app.players = Array.from({ length: 10 }, (_, i) => ({
+    id: i + 1,
+    fouls: 0,
+    outReason: null,
+  }));
   app.votingOrder = [];
+  app.voteSession = null;
   app.revealedIndices = [];
   app.timerInterval = null;
   app.timeLeft = 60;
@@ -17,13 +22,10 @@ window.MafiaApp = window.MafiaApp || {};
         roles: app.roles,
         players: app.players,
         votingOrder: app.votingOrder,
+        voteSession: app.voteSession,
         revealedIndices: app.revealedIndices,
         timeLeft: app.timeLeft,
       };
-      if (typeof app.fontBaseSize === 'number') payload.fontBaseSize = app.fontBaseSize;
-      payload.btnFontVersion = 2;
-      if (typeof app.timerDigitsSize === 'number') payload.timerDigitsSize = app.timerDigitsSize;
-      if (typeof app.timerButtonsSize === 'number') payload.timerButtonsSize = app.timerButtonsSize;
       localStorage.setItem(app.STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {}
   };
@@ -34,27 +36,29 @@ window.MafiaApp = window.MafiaApp || {};
       if (!raw) return false;
       const data = JSON.parse(raw);
       if (data.roles && Array.isArray(data.roles)) app.roles = data.roles;
-      if (data.players && Array.isArray(data.players)) app.players = data.players;
-      if (data.votingOrder && Array.isArray(data.votingOrder)) app.votingOrder = data.votingOrder;
-      if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
-      if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
-      if (typeof data.fontBaseSize === 'number') {
-        var maxFit = typeof app.PLAYER_BTN_FIT_MAX_PX === 'number' ? app.PLAYER_BTN_FIT_MAX_PX : 29;
-        var minFit = typeof app.PLAYER_BTN_FIT_MIN_PX === 'number' ? app.PLAYER_BTN_FIT_MIN_PX : 10;
-        if (!data.btnFontVersion || data.btnFontVersion < 2) {
-          app.fontBaseSize = Math.min(maxFit, Math.max(minFit, Math.round(data.fontBaseSize * 1.2)));
-        } else {
-          app.fontBaseSize = data.fontBaseSize;
+      if (data.players && Array.isArray(data.players)) {
+        app.players = data.players;
+        for (var pi = 0; pi < app.players.length; pi++) {
+          if (!Object.prototype.hasOwnProperty.call(app.players[pi], 'outReason')) {
+            app.players[pi].outReason = null;
+          }
+          if (app.players[pi].outReason === 'removed') {
+            app.players[pi].outReason = 'disqual';
+          }
         }
       }
-      if (typeof data.timerDigitsSize === 'number') {
-        var minDig = typeof app.MIN_TIMER_DIGITS_PX === 'number' ? app.MIN_TIMER_DIGITS_PX : 44;
-        app.timerDigitsSize = Math.max(data.timerDigitsSize, minDig);
+      if (data.votingOrder && Array.isArray(data.votingOrder)) {
+        app.votingOrder = data.votingOrder;
+        app.votingOrder = app.votingOrder.filter(function (vid) {
+          var pl = app.players.find(function (x) {
+            return x.id === vid;
+          });
+          return pl && !pl.outReason;
+        });
       }
-      if (typeof data.timerButtonsSize === 'number') {
-        var minBtn = typeof app.MIN_TIMER_BUTTONS_PX === 'number' ? app.MIN_TIMER_BUTTONS_PX : 14;
-        app.timerButtonsSize = Math.max(data.timerButtonsSize, minBtn);
-      }
+      if (data.voteSession && typeof data.voteSession === 'object') app.voteSession = data.voteSession;
+      if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
+      if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
       return true;
     } catch (e) {
       return false;
@@ -66,8 +70,13 @@ window.MafiaApp = window.MafiaApp || {};
       localStorage.removeItem(app.STORAGE_KEY);
     } catch (e) {}
     app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
-    app.players = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, fouls: 0 }));
+    app.players = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      fouls: 0,
+      outReason: null,
+    }));
     app.votingOrder = [];
+    app.voteSession = null;
     app.revealedIndices = [];
     app.timeLeft = 60;
     if (app.timerInterval) clearInterval(app.timerInterval);

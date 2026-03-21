@@ -134,8 +134,11 @@
   function showEl(id, show) {
     var el = document.getElementById(id);
     if (!el) return;
-    el.classList.toggle('hidden', !show);
-    el.setAttribute('aria-hidden', show ? 'false' : 'true');
+    if (app.modalSetOpen) app.modalSetOpen(el, show);
+    else {
+      el.classList.toggle('hidden', !show);
+      el.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
   }
 
   app.showMusicSlotModal = function () {

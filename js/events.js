@@ -1,5 +1,77 @@
 (function (app) {
   app.bindClicks = function () {
+    var voteTilePtr = { tile: null, id: null };
+
+    function voteCandidateTileFromTarget(target) {
+      return target && target.closest ? target.closest('[data-action="vote-open-count"]') : null;
+    }
+
+    if (window.PointerEvent) {
+      document.body.addEventListener(
+        'pointerdown',
+        function (e) {
+          var tile = voteCandidateTileFromTarget(e.target);
+          if (!tile) {
+            voteTilePtr.tile = null;
+            voteTilePtr.id = null;
+            return;
+          }
+          var vs = document.getElementById('vote-screen');
+          if (!vs || !vs.classList.contains('active')) {
+            voteTilePtr.tile = null;
+            voteTilePtr.id = null;
+            return;
+          }
+          voteTilePtr.tile = tile;
+          voteTilePtr.id = e.pointerId;
+          if (e.pointerType === 'touch') e.preventDefault();
+        },
+        { capture: true, passive: false }
+      );
+
+      document.body.addEventListener(
+        'pointerup',
+        function (e) {
+          var tile = voteCandidateTileFromTarget(e.target);
+          var downTile = voteTilePtr.tile;
+          var downId = voteTilePtr.id;
+          voteTilePtr.tile = null;
+          voteTilePtr.id = null;
+          if (!downTile || !tile || downTile !== tile || e.pointerId !== downId) return;
+          var vs = document.getElementById('vote-screen');
+          if (!vs || !vs.classList.contains('active')) return;
+          if (e.pointerType === 'touch') e.preventDefault();
+          var cix = tile.getAttribute('data-candidate-index');
+          if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cix, 10));
+        },
+        { capture: true, passive: false }
+      );
+
+      document.body.addEventListener(
+        'pointercancel',
+        function () {
+          voteTilePtr.tile = null;
+          voteTilePtr.id = null;
+        },
+        true
+      );
+
+      document.body.addEventListener(
+        'keydown',
+        function (e) {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          var t = e.target.closest('[data-action="vote-open-count"]');
+          if (!t) return;
+          var vs = document.getElementById('vote-screen');
+          if (!vs || !vs.classList.contains('active')) return;
+          e.preventDefault();
+          var cixK = t.getAttribute('data-candidate-index');
+          if (cixK !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cixK, 10));
+        },
+        true
+      );
+    }
+
     document.body.addEventListener('click', function (e) {
       let t = e.target.closest('[data-action="full-reset"]');
       if (t) {
@@ -63,12 +135,62 @@
           const sec = t.getAttribute('data-seconds');
           if (sec) app.resetTimer(parseInt(sec, 10));
         } else if (action === 'clear-voting') app.clearVoting();
-        else if (action === 'foul') {
-          const id = t.getAttribute('data-player-id');
-          if (id) app.addFoul(parseInt(id, 10));
-        } else if (action === 'vote') {
-          const id = t.getAttribute('data-player-id');
-          if (id) app.addToVote(parseInt(id, 10));
+        else if (action === 'vote-open-count') {
+          if (window.PointerEvent) return;
+          var cix = t.getAttribute('data-candidate-index');
+          if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cix, 10));
+        } else if (action === 'vote-count-pick') {
+          /* Второй синтетический click часто попадает в кнопку числа (0…) и закрывает модалку через applyVoteCountPick */
+          if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
+          var vv = t.getAttribute('data-value');
+          if (vv !== null && app.applyVoteCountPick) app.applyVoteCountPick(parseInt(vv, 10));
+        } else if (action === 'raise-all-pick') {
+          var rv = t.getAttribute('data-value');
+          if (rv !== null && app.applyRaiseAllPick) app.applyRaiseAllPick(parseInt(rv, 10));
+        } else if (action === 'vote-count-cancel') {
+          /* Второй синтетический click часто попадает в «Отмена» или бэкдроп под тем же углом — блокируем всё cancel сразу после открытия */
+          if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
+          if (app.hideVoteCountModal) app.hideVoteCountModal();
+        } else if (action === 'player-slot-open') {
+          const sid = t.getAttribute('data-player-id');
+          if (sid && app.showPlayerActionsModal) {
+            app.showPlayerActionsModal(parseInt(sid, 10));
+          }
+        } else if (action === 'player-modal-cancel') {
+          if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+        } else if (action === 'player-modal-foul') {
+          var modalF = document.getElementById('modal-player-actions');
+          var pidF = modalF && modalF.dataset.playerId ? parseInt(modalF.dataset.playerId, 10) : NaN;
+          if (!isNaN(pidF)) {
+            var plF = app.players.find(function (x) {
+              return x.id === pidF;
+            });
+            if (plF && !plF.outReason) {
+              if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+              app.addFoul(pidF);
+            }
+          }
+        } else if (action === 'player-modal-vote') {
+          var modalV = document.getElementById('modal-player-actions');
+          var pidV = modalV && modalV.dataset.playerId ? parseInt(modalV.dataset.playerId, 10) : NaN;
+          if (!isNaN(pidV)) {
+            var plV = app.players.find(function (x) {
+              return x.id === pidV;
+            });
+            var inQV = app.votingOrder.indexOf(pidV) !== -1;
+            if (plV && !plV.outReason && !inQV) {
+              if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+              app.addToVote(pidV);
+            }
+          }
+        } else if (action === 'player-modal-elim') {
+          var modalE = document.getElementById('modal-player-actions');
+          var pidE = modalE && modalE.dataset.playerId ? parseInt(modalE.dataset.playerId, 10) : NaN;
+          var reasonE = t.getAttribute('data-elim');
+          if (!isNaN(pidE) && reasonE && app.togglePlayerElimination) {
+            if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+            app.togglePlayerElimination(pidE, reasonE);
+          }
         }
         return;
       }

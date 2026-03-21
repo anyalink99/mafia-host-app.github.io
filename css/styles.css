@@ -6,26 +6,54 @@ body {
 }
 
 body {
+  position: relative;
   font-family: 'Manrope', sans-serif;
   user-select: none;
   touch-action: manipulation;
 }
 
 .screen {
-  display: none !important;
-  pointer-events: none !important;
-  position: relative;
-  z-index: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  z-index: 1;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  flex-direction: column;
+  opacity: 0;
+  /* База 200ms, ускорение в 1.7× → ~118ms */
+  transition: opacity 0.118s ease-out;
+}
+
+#role-screen.screen {
+  position: fixed !important;
 }
 
 .screen.active {
-  display: flex !important;
-  pointer-events: auto !important;
+  pointer-events: auto;
   z-index: 10;
+  opacity: 1;
+}
+
+/* Модалки: fade бэкдропа + лёгкий scale/сдвиг панели */
+.modal-overlay {
+  opacity: 0;
+  transition: opacity 0.118s ease-out;
+}
+
+.modal-overlay[data-open] {
+  opacity: 1;
+}
+
+.modal-overlay .modal-panel {
+  transform: scale(0.98) translateY(8px);
+  transition: transform 0.118s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-overlay[data-open] .modal-panel {
+  transform: scale(1) translateY(0);
 }
 
 .screen-content {
@@ -104,11 +132,7 @@ body {
 }
 
 #players-list {
-  grid-auto-rows: 1fr;
-}
-
-#players-list > * {
-  min-height: 2.5rem;
+  align-items: stretch;
 }
 
 .role-icon {
@@ -132,11 +156,6 @@ body {
 }
 
 /* Игровой стол: стабильные размеры при медленном Tailwind CDN / другом порядке загрузки */
-#game-screen .game-discussion-label {
-  font-size: clamp(0.8125rem, 2.8vmin, 0.9375rem);
-  line-height: 1.35;
-}
-
 #game-screen #timer {
   line-height: 1;
   font-weight: 700;
