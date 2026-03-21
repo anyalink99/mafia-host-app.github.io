@@ -1,4 +1,12 @@
 (function (app) {
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   app.getActivePlayerCount = function () {
     var c = 0;
     for (var ai = 0; ai < app.players.length; ai++) {
@@ -7,9 +15,31 @@
     return c;
   };
 
+  app.syncPlayerNickFromModal = function () {
+    var m = document.getElementById('modal-player-actions');
+    var inp = document.getElementById('modal-player-nick');
+    if (!m || !inp) return;
+    var pidStr = m.dataset.playerId;
+    if (pidStr === undefined || pidStr === '') return;
+    var pid = parseInt(pidStr, 10);
+    if (isNaN(pid)) return;
+    var pl = app.players.find(function (x) {
+      return x.id === pid;
+    });
+    if (!pl) return;
+    pl.nick = inp.value.slice(0, 32);
+    app.saveState();
+  };
+
   app.hidePlayerActionsModal = function () {
     var m = document.getElementById('modal-player-actions');
+    var wasOpen = m && m.hasAttribute('data-open');
+    if (wasOpen) app.syncPlayerNickFromModal();
     if (m) app.modalSetOpen(m, false);
+    if (wasOpen) {
+      var gs = document.getElementById('game-screen');
+      if (gs && gs.classList.contains('active') && app.renderPlayers) app.renderPlayers();
+    }
   };
 
   app.showPlayerActionsModal = function (id) {
@@ -53,7 +83,32 @@
       elims[ei].className = p.outReason === er ? elimOn : elimOff;
     }
     m.dataset.playerId = String(id);
+    var nickInp = document.getElementById('modal-player-nick');
+    if (nickInp) nickInp.value = p.nick != null ? String(p.nick) : '';
     app.modalSetOpen(m, true);
+  };
+
+  app.pruneGameLogOnRevive = function (playerId, reason) {
+    if (!Array.isArray(app.gameLog)) return;
+    for (var i = app.gameLog.length - 1; i >= 0; i--) {
+      var e = app.gameLog[i];
+      if (reason === 'hang') {
+        if (e.type === 'vote_hang' && e.eliminatedIds && e.eliminatedIds.indexOf(playerId) !== -1) {
+          e.eliminatedIds = e.eliminatedIds.filter(function (x) {
+            return x !== playerId;
+          });
+          if (e.eliminatedIds.length === 0) app.gameLog.splice(i, 1);
+          return;
+        }
+        if (e.type === 'elimination' && e.playerId === playerId && e.reason === 'hang') {
+          app.gameLog.splice(i, 1);
+          return;
+        }
+      } else if (e.type === 'elimination' && e.playerId === playerId && e.reason === reason) {
+        app.gameLog.splice(i, 1);
+        return;
+      }
+    }
   };
 
   app.togglePlayerElimination = function (id, reason) {
@@ -66,8 +121,10 @@
       if (reason === 'disqual') {
         p.fouls = 0;
       }
+      app.pruneGameLogOnRevive(id, reason);
     } else {
       p.outReason = reason;
+      app.gameLog.push({ type: 'elimination', ts: Date.now(), playerId: id, reason: reason });
       var vix = app.votingOrder.indexOf(id);
       if (vix !== -1) {
         app.votingOrder.splice(vix, 1);
@@ -89,14 +146,12 @@
   app.renderPlayers = function () {
     var list = document.getElementById('players-list');
     if (!list) return;
+    list.className =
+      'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
     list.innerHTML = '';
     app.players.forEach(function (p) {
       var out = !!p.outReason;
       var inVoteQueue = app.votingOrder.indexOf(p.id) !== -1;
-      var row = document.createElement('div');
-      row.className =
-        'player-cell flex h-full min-h-0 min-w-0 flex-col rounded-lg border border-mafia-border bg-mafia-coal shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]' +
-        (out ? ' opacity-[0.55]' : '');
       var statusHtml;
       if (p.outReason) {
         statusHtml =
@@ -110,33 +165,28 @@
         statusHtml =
           '<div class="invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent" aria-hidden="true"></div>';
       }
-      var foulClassDefault =
-        'font-display text-base font-semibold leading-none tabular-nums sm:text-lg ' +
-        (p.fouls >= 3 ? 'text-mafia-blood' : 'text-mafia-cream/95');
-      var foulClassCompact =
+      var foulClass =
         'font-display text-sm font-semibold leading-none tabular-nums sm:text-base ' +
         (p.fouls >= 3 ? 'text-mafia-blood' : 'text-mafia-cream/95');
-      row.innerHTML =
-        '<button type="button" class="player-slot flex h-full min-h-0 w-full min-w-0 flex-col justify-center px-2 pt-2 pb-2 text-center outline-none transition-transform active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-2.5" data-action="player-slot-open" data-player-id="' +
-        p.id +
-        '">' +
-        '<div class="player-slot__default flex w-full min-h-0 flex-col gap-2 sm:gap-2.5">' +
-        '<div class="grid w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
-        '<div class="flex min-w-0 justify-end">' +
-        statusHtml +
-        '</div>' +
-        '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' +
-        p.id +
-        '</span>' +
-        '<div class="min-w-0" aria-hidden="true"></div></div>' +
-        '<div class="flex min-h-0 w-full shrink-0 items-baseline justify-center gap-2 rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
-        '<span class="text-[9px] font-medium uppercase tracking-[0.16em] text-mafia-gold/55 sm:text-[10px]">Фолы</span>' +
-        '<span class="' +
-        foulClassDefault +
-        '">' +
-        p.fouls +
-        '</span></div></div>' +
-        '<div class="player-slot__compact grid w-full min-h-0 flex-1 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
+      var foulInner = '<span class="' + foulClass + '">Ф: ' + p.fouls + '</span>';
+      var nickTrim = p.nick != null ? String(p.nick).trim() : '';
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-transform active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
+        (out ? ' opacity-[0.55]' : '');
+      btn.setAttribute('data-action', 'player-slot-open');
+      btn.setAttribute('data-player-id', String(p.id));
+      btn.setAttribute(
+        'aria-label',
+        nickTrim ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim : 'Игрок №' + p.id
+      );
+      var nickRowClass =
+        'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+        (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30');
+      btn.innerHTML =
+        '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
         '<div class="flex min-w-0 justify-start">' +
         statusHtml +
         '</div>' +
@@ -144,13 +194,16 @@
         p.id +
         '</span>' +
         '<div class="flex min-w-0 justify-end">' +
-        '<div class="player-slot__foul-pill player-slot__foul-pill--compact flex shrink-0 items-center justify-center gap-2 rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
-        '<span class="' +
-        foulClassCompact +
-        '">Ф: ' +
-        p.fouls +
-        '</span></div></div></div></button>';
-      list.appendChild(row);
+        '<div class="player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
+        foulInner +
+        '</div></div></div>' +
+        '<div class="' +
+        nickRowClass +
+        '" role="presentation">' +
+        (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
+        '</div>';
+
+      list.appendChild(btn);
     });
   };
 
@@ -163,6 +216,7 @@
     if (p.fouls >= 4) {
       p.fouls = 4;
       p.outReason = 'disqual';
+      app.gameLog.push({ type: 'elimination', ts: Date.now(), playerId: id, reason: 'disqual' });
       var vix = app.votingOrder.indexOf(id);
       if (vix !== -1) {
         app.votingOrder.splice(vix, 1);
@@ -281,7 +335,27 @@
     return true;
   };
 
-  app.finalizeVoteHang = function (ids) {
+  app.finalizeVoteHang = function (ids, raiseAllPickedVotes) {
+    var vsSnap = app.voteSession;
+    var cand =
+      vsSnap && vsSnap.candidateIds
+        ? vsSnap.candidateIds.slice()
+        : vsSnap && vsSnap.raiseCandidateIds
+          ? vsSnap.raiseCandidateIds.slice()
+          : [];
+    var vts = vsSnap && vsSnap.votes ? vsSnap.votes.slice() : [];
+    var viaRA = !!(vsSnap && vsSnap.phase === 'raiseAll');
+    app.gameLog.push({
+      type: 'vote_hang',
+      ts: Date.now(),
+      eliminatedIds: ids.slice(),
+      candidateIds: cand,
+      votes: vts,
+      tieRevote: !!(vsSnap && vsSnap.tieRevote),
+      viaRaiseAll: viaRA,
+      raiseAllVotes: viaRA && typeof raiseAllPickedVotes === 'number' ? raiseAllPickedVotes : undefined,
+      raiseAllPoolTotal: viaRA && vsSnap && typeof vsSnap.poolTotal === 'number' ? vsSnap.poolTotal : undefined,
+    });
     for (var hi = 0; hi < ids.length; hi++) {
       var p = app.players.find(function (x) {
         return x.id === ids[hi];
@@ -303,8 +377,14 @@
     if (value < 0 || value > n) return;
     var majority = value > n / 2;
     if (majority) {
-      app.finalizeVoteHang(s.raiseCandidateIds);
+      app.finalizeVoteHang(s.raiseCandidateIds, value);
     } else {
+      app.gameLog.push({
+        type: 'vote_no_elimination',
+        ts: Date.now(),
+        votesCast: value,
+        poolTotal: n,
+      });
       app.votingOrder = [];
       app.voteSession = null;
       app.updateVotingUI();
@@ -328,6 +408,14 @@
       if (s.votes[t] === maxV) tied.push(s.candidateIds[t]);
     }
     if (tied.length >= 2) {
+      app.gameLog.push({
+        type: 'vote_tie',
+        ts: Date.now(),
+        candidateIds: s.candidateIds.slice(),
+        votes: s.votes.slice(),
+        tiedIds: tied.slice(),
+        isRevote: !!s.tieRevote,
+      });
       if (!s.tieRevote) {
         s.candidateIds = tied;
         s.votes = tied.map(function () {
@@ -341,6 +429,12 @@
         app.resetTimer(30);
         return;
       }
+      app.gameLog.push({
+        type: 'vote_raise_all',
+        ts: Date.now(),
+        poolTotal: s.poolTotal,
+        tiedIds: tied.slice(),
+      });
       app.voteSession = {
         phase: 'raiseAll',
         poolTotal: s.poolTotal,

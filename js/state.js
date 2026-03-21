@@ -8,6 +8,7 @@ window.MafiaApp = window.MafiaApp || {};
     id: i + 1,
     fouls: 0,
     outReason: null,
+    nick: '',
   }));
   app.votingOrder = [];
   app.voteSession = null;
@@ -15,6 +16,29 @@ window.MafiaApp = window.MafiaApp || {};
   app.timerInterval = null;
   app.timeLeft = 60;
   app.canCloseRole = false;
+
+  app.gameLog = [];
+
+  /** Ключ — id игрока (строка). Значение: 'don' | 'sheriff' | '' при неполной раздаче */
+  app.playerRoleOverrides = {};
+
+  /** null | 'mafia' | 'peaceful' */
+  app.winningTeam = null;
+
+  /** Ключ — id игрока (строка), значение — число бонусных очков */
+  app.bonusPointsByPlayerId = {};
+
+  /** Ключ — id игрока (строка). Значение: 'peaceful' | 'mafia' | 'don' | 'sheriff' — ручная правка на экране итогов */
+  app.summaryRoleByPlayerId = {};
+
+  /** Ключ — id игрока (строка), примечание к доп. баллам */
+  app.bonusNoteByPlayerId = {};
+
+  /** Ключ — id игрока (строка), текст «лучший ход» */
+  app.bestMoveByPlayerId = {};
+
+  /** Имя ведущего на экране подведения итогов */
+  app.summaryHostName = '';
 
   app.saveState = function () {
     try {
@@ -25,6 +49,14 @@ window.MafiaApp = window.MafiaApp || {};
         voteSession: app.voteSession,
         revealedIndices: app.revealedIndices,
         timeLeft: app.timeLeft,
+        gameLog: app.gameLog,
+        playerRoleOverrides: app.playerRoleOverrides,
+        winningTeam: app.winningTeam,
+        bonusPointsByPlayerId: app.bonusPointsByPlayerId,
+        summaryRoleByPlayerId: app.summaryRoleByPlayerId,
+        bonusNoteByPlayerId: app.bonusNoteByPlayerId,
+        bestMoveByPlayerId: app.bestMoveByPlayerId,
+        summaryHostName: app.summaryHostName,
       };
       localStorage.setItem(app.STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -44,6 +76,9 @@ window.MafiaApp = window.MafiaApp || {};
           }
           if (app.players[pi].outReason === 'removed') {
             app.players[pi].outReason = 'disqual';
+          }
+          if (!Object.prototype.hasOwnProperty.call(app.players[pi], 'nick')) {
+            app.players[pi].nick = '';
           }
         }
       }
@@ -71,6 +106,51 @@ window.MafiaApp = window.MafiaApp || {};
       }
       if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
       if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
+      if (data.gameLog && Array.isArray(data.gameLog)) app.gameLog = data.gameLog;
+      else if (data.gameHistory && Array.isArray(data.gameHistory)) app.gameLog = data.gameHistory;
+      else app.gameLog = [];
+      if (data.playerRoleOverrides && typeof data.playerRoleOverrides === 'object' && !Array.isArray(data.playerRoleOverrides)) {
+        app.playerRoleOverrides = data.playerRoleOverrides;
+      } else app.playerRoleOverrides = {};
+      if (data.winningTeam === 'mafia' || data.winningTeam === 'peaceful' || data.winningTeam === null) {
+        app.winningTeam = data.winningTeam;
+      } else if (data.summary && typeof data.summary === 'object' && typeof data.summary.winningTeam === 'string') {
+        var wt = data.summary.winningTeam;
+        if (wt === 'mafia') app.winningTeam = 'mafia';
+        else if (wt === 'peaceful' || wt === 'civilian') app.winningTeam = 'peaceful';
+        else app.winningTeam = null;
+      } else app.winningTeam = null;
+      if (data.bonusPointsByPlayerId && typeof data.bonusPointsByPlayerId === 'object' && !Array.isArray(data.bonusPointsByPlayerId)) {
+        app.bonusPointsByPlayerId = data.bonusPointsByPlayerId;
+      } else if (data.summary && data.summary.bonusByPlayer && typeof data.summary.bonusByPlayer === 'object') {
+        app.bonusPointsByPlayerId = data.summary.bonusByPlayer;
+      } else app.bonusPointsByPlayerId = {};
+      if (data.summaryRoleByPlayerId && typeof data.summaryRoleByPlayerId === 'object' && !Array.isArray(data.summaryRoleByPlayerId)) {
+        app.summaryRoleByPlayerId = data.summaryRoleByPlayerId;
+      } else app.summaryRoleByPlayerId = {};
+      if (data.bonusNoteByPlayerId && typeof data.bonusNoteByPlayerId === 'object' && !Array.isArray(data.bonusNoteByPlayerId)) {
+        app.bonusNoteByPlayerId = data.bonusNoteByPlayerId;
+      } else app.bonusNoteByPlayerId = {};
+      if (data.bestMoveByPlayerId && typeof data.bestMoveByPlayerId === 'object' && !Array.isArray(data.bestMoveByPlayerId)) {
+        app.bestMoveByPlayerId = data.bestMoveByPlayerId;
+      } else app.bestMoveByPlayerId = {};
+      if (typeof data.summaryHostName === 'string') app.summaryHostName = data.summaryHostName;
+      else app.summaryHostName = '';
+      if (!app.playerRoleOverrides || !Object.keys(app.playerRoleOverrides).length) {
+        if (data.summary && Array.isArray(data.summary.rolesManual)) {
+          for (var rmi = 0; rmi < data.summary.rolesManual.length; rmi++) {
+            var rm = data.summary.rolesManual[rmi];
+            if (rm && typeof rm.playerId === 'number') {
+              if (rm.role === 'don' || rm.role === 'Дон') app.playerRoleOverrides[String(rm.playerId)] = 'don';
+              else if (rm.role === 'sheriff' || rm.role === 'Шериф') app.playerRoleOverrides[String(rm.playerId)] = 'sheriff';
+            } else if (typeof rm === 'string') {
+              var seat = rmi + 1;
+              if (rm === 'Дон') app.playerRoleOverrides[String(seat)] = 'don';
+              else if (rm === 'Шериф') app.playerRoleOverrides[String(seat)] = 'sheriff';
+            }
+          }
+        }
+      }
       return true;
     } catch (e) {
       return false;
@@ -86,11 +166,20 @@ window.MafiaApp = window.MafiaApp || {};
       id: i + 1,
       fouls: 0,
       outReason: null,
+      nick: '',
     }));
     app.votingOrder = [];
     app.voteSession = null;
     app.revealedIndices = [];
     app.timeLeft = 60;
+    app.gameLog = [];
+    app.playerRoleOverrides = {};
+    app.winningTeam = null;
+    app.bonusPointsByPlayerId = {};
+    app.summaryRoleByPlayerId = {};
+    app.bonusNoteByPlayerId = {};
+    app.bestMoveByPlayerId = {};
+    app.summaryHostName = '';
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.showScreen('menu-screen');

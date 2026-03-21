@@ -66,6 +66,8 @@
   app.showScreen = function (screenId) {
     if (screenId !== 'vote-screen' && app.hideVoteCountModal) app.hideVoteCountModal();
     if (screenId !== 'game-screen' && app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+    if (screenId !== 'summary-screen' && app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
+    if (screenId !== 'summary-screen' && app.hideSummaryLogModal) app.hideSummaryLogModal();
     document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
     const el = document.getElementById(screenId);
     if (el) el.classList.add('active');
@@ -86,7 +88,9 @@
     }
     if (screenId === 'vote-screen' && app.prepareVoteScreen) app.prepareVoteScreen();
     if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
+    if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
     if (screenId === 'settings-screen' && app.renderMusicSettings) app.renderMusicSettings();
+    if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
   };
 
   app.initGameFromMenu = function () {

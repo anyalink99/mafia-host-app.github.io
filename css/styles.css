@@ -135,35 +135,14 @@ body {
   align-items: stretch;
 }
 
-/* Компактная строка «Ф: N» только когда ячейка по высоте не тянет две строки */
-.player-cell {
-  container-type: size;
+/* Игровой стол: одна строка — статус, №, «Ф: N» */
+.player-slot__row {
+  align-items: center;
 }
 
-.player-slot__default {
-  display: flex;
-  flex-direction: column;
-}
-
-.player-slot__compact {
-  display: none !important;
-}
-
-/* Порог: ниже типичной высоты двух строк (номер + полоса фолов) — одна строка «Ф: N» */
-@container (max-height: 94px) {
-  .player-slot__default {
-    display: none !important;
-  }
-
-  .player-slot__compact {
-    display: grid !important;
-    align-items: center;
-  }
-
-  /* Крупный номер (serif + leading-none) визуально ниже геометрического центра — чуть опускаем плашку «Ф:» */
-  .player-slot__foul-pill--compact {
-    transform: translateY(0.1875rem);
-  }
+/* Крупный номер (serif + leading-none) визуально ниже центра — чуть опускаем плашку «Ф:» */
+.player-slot__foul-pill {
+  transform: translateY(0.1875rem);
 }
 
 .role-icon {

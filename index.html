@@ -37,6 +37,10 @@
       <circle cx="12" cy="12" r="10" />
       <path d="M11.051 7.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.867l-1.156-1.152a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z" />
     </symbol>
+    <symbol id="icon-like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.39a2 2 0 0 0 1.98-1.67l1.2-7A2 2 0 0 0 21.76 9H14z" />
+      <path d="M2 9h4v12H2z" />
+    </symbol>
     <!-- Удалён: Feather user-x (MIT) -->
     <symbol id="icon-elim-disqual" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -79,7 +83,10 @@
                 Раздать роли
             </button>
             <button type="button" id="btn-game" data-goto="game-screen" data-init="game" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
-                К столу (без раздачи)
+                К столу
+            </button>
+            <button type="button" id="btn-summary" data-goto="summary-screen" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
+                Подведение итогов
             </button>
             <button type="button" id="btn-settings" data-goto="settings-screen" class="w-full py-3 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-gold/90 font-medium text-sm tracking-wide uppercase transition-all duration-200 rounded-sm cursor-pointer">
                 Настройки
@@ -184,10 +191,43 @@
     <div id="vote-candidates" class="flex-1 min-h-0 overflow-auto flex flex-wrap content-start justify-center gap-3 sm:gap-4 py-2"></div>
 </div>
 
+<div id="summary-screen" class="screen flex flex-col min-h-0 p-4 sm:p-6 overflow-hidden">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Подведение итогов</span>
+    </div>
+    <div id="summary-scroll" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-6 space-y-6 max-w-2xl w-full mx-auto">
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5">
+            <div class="flex min-w-0 flex-nowrap items-center gap-3 sm:gap-4">
+                <label for="summary-host-name" class="font-display text-mafia-gold text-base tracking-widest shrink-0 leading-none">Ведущий:</label>
+                <input type="text" id="summary-host-name" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" class="min-w-0 flex-1 rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5">
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                <h2 class="font-display text-mafia-gold text-base tracking-widest shrink-0 leading-none">Победитель</h2>
+                <div id="summary-winning-team-icons" class="flex flex-wrap items-center gap-2 sm:gap-2.5" role="radiogroup" aria-label="Победитель"></div>
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 flex flex-col min-h-0 max-h-[min(55vh,28rem)] flex-shrink-0">
+            <div id="summary-roles-grid" class="flex-1 min-h-[12rem] overflow-hidden"></div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Ход игры</h2>
+            <ul id="summary-history" class="text-sm text-mafia-cream/85 space-y-1.5 list-disc pl-5 marker:text-mafia-gold/60"></ul>
+            <p id="summary-history-empty" class="text-sm text-mafia-cream/50">Пока нет записей: голосования и выбывания появятся здесь автоматически.</p>
+        </section>
+    </div>
+</div>
+
 <div id="modal-player-actions" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-player-actions-title">
     <div class="absolute inset-0" data-action="player-modal-cancel" aria-hidden="true"></div>
     <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-6 pt-8 pb-5 max-w-sm w-full shadow-xl">
-        <h2 id="modal-player-actions-title" class="font-display text-mafia-gold text-3xl sm:text-4xl md:text-[2.125rem] text-center font-bold tracking-wide leading-tight mb-8">Игрок</h2>
+        <h2 id="modal-player-actions-title" class="font-display text-mafia-gold text-3xl sm:text-4xl md:text-[2.125rem] text-center font-bold tracking-wide leading-tight mb-4">Игрок</h2>
+        <div class="mb-6 flex flex-col gap-1.5">
+            <label for="modal-player-nick" class="font-display text-xs text-mafia-gold/90">Псевдоним</label>
+            <input type="text" id="modal-player-nick" maxlength="32" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Не указан" class="w-full rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">
+        </div>
         <div class="flex flex-col gap-2">
             <button type="button" data-action="player-modal-foul" class="w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Фол (+1)</button>
             <button type="button" data-action="player-modal-vote" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Выставить</button>
@@ -204,6 +244,62 @@
             </button>
         </div>
         <button type="button" data-action="player-modal-cancel" class="w-full mt-8 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+    </div>
+</div>
+
+<div id="modal-summary-player" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-summary-player-title">
+    <div class="absolute inset-0" data-action="summary-modal-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl max-h-[90dvh] overflow-y-auto">
+        <h2 id="modal-summary-player-title" class="font-display text-mafia-gold text-2xl text-center font-bold tracking-wide leading-tight mb-3">Игрок</h2>
+        <p id="modal-summary-locked-hint" class="text-xs text-mafia-cream/60 text-center mb-4">Допы, роль и примечание — после выбора победителя. Лучший ход (три номера) можно менять до конца игры.</p>
+        <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-1 text-xs text-mafia-cream/70">
+                <span class="font-display text-mafia-gold/90">Доп. баллы</span>
+                <div class="flex gap-1.5 items-stretch">
+                    <input type="text" id="modal-summary-bonus" inputmode="decimal" autocomplete="off" class="min-w-0 flex-1 py-2 px-2 rounded border border-mafia-border bg-mafia-card text-mafia-cream text-sm tabular-nums">
+                    <button type="button" data-action="summary-bonus-delta" data-delta="0.1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">+0,1</button>
+                    <button type="button" data-action="summary-bonus-delta" data-delta="-0.1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">−0,1</button>
+                </div>
+            </div>
+            <div id="modal-summary-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70" style="display: none">
+                <span class="font-display text-mafia-gold/90">Лучший ход</span>
+                <div class="flex gap-1.5 items-center">
+                    <input type="text" id="modal-summary-bestmove-1" maxlength="2" inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Номер 1" class="w-11 py-1.5 px-1.5 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <input type="text" id="modal-summary-bestmove-2" maxlength="2" inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Номер 2" class="w-11 py-1.5 px-1.5 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <input type="text" id="modal-summary-bestmove-3" maxlength="2" inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Номер 3" class="w-11 py-1.5 px-1.5 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                </div>
+            </div>
+            <label class="flex flex-col gap-1 text-xs text-mafia-cream/70">
+                <span class="font-display text-mafia-gold/90">Примечание к допу</span>
+                <textarea id="modal-summary-bonus-note" rows="2" class="w-full resize-y rounded border border-mafia-border bg-mafia-card px-2 py-2 text-sm text-mafia-cream/90"></textarea>
+            </label>
+            <label class="flex flex-col gap-1 text-xs text-mafia-cream/70">
+                <span class="font-display text-mafia-gold/90">Роль</span>
+                <select id="modal-summary-role" class="w-full py-2 px-2 rounded border border-mafia-border bg-mafia-card text-mafia-cream text-sm cursor-pointer">
+                    <option value="peaceful">Мирный житель</option>
+                    <option value="mafia">Мафия</option>
+                    <option value="don">Дон</option>
+                    <option value="sheriff">Шериф</option>
+                </select>
+            </label>
+        </div>
+        <div class="mt-5 flex flex-col gap-2">
+            <button type="button" id="modal-summary-save" data-action="summary-modal-save" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Сохранить</button>
+            <button type="button" data-action="summary-modal-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-summary-log" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-summary-log-title">
+    <div class="absolute inset-0" data-action="summary-modal-log-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-lg w-full shadow-xl max-h-[90dvh] overflow-y-auto">
+        <h2 id="modal-summary-log-title" class="font-display text-mafia-gold text-xl text-center font-bold tracking-wide leading-tight mb-4">Запись в логе</h2>
+        <label class="sr-only" for="modal-summary-log-text">Текст записи</label>
+        <textarea id="modal-summary-log-text" rows="6" class="w-full resize-y rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream/90 focus:border-mafia-gold/45 focus:outline-none"></textarea>
+        <div class="mt-5 flex flex-col gap-2">
+            <button type="button" data-action="summary-modal-log-save" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Сохранить</button>
+            <button type="button" data-action="summary-modal-log-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
     </div>
 </div>
 
@@ -249,6 +345,7 @@
 <script src="js/screens.js"></script>
 <script src="js/cards.js"></script>
 <script src="js/game.js"></script>
+<script src="js/summary.js"></script>
 <script src="js/events.js"></script>
 <script src="js/main.js"></script>
 </body>

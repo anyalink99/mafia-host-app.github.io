@@ -191,6 +191,30 @@
             if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
             app.togglePlayerElimination(pidE, reasonE);
           }
+        } else if (action === 'summary-player-open') {
+          var sumScr = document.getElementById('summary-screen');
+          if (!sumScr || !sumScr.classList.contains('active')) return;
+          var spid = t.getAttribute('data-player-id');
+          if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(parseInt(spid, 10));
+        } else if (action === 'summary-modal-cancel') {
+          if (app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
+        } else if (action === 'summary-modal-save') {
+          if (app.applySummaryPlayerModal) app.applySummaryPlayerModal();
+        } else if (action === 'summary-bonus-delta') {
+          var sumScrB = document.getElementById('summary-screen');
+          if (!sumScrB || !sumScrB.classList.contains('active')) return;
+          var dAttr = t.getAttribute('data-delta');
+          var d = dAttr !== null ? parseFloat(dAttr) : NaN;
+          if (!isNaN(d) && app.applySummaryBonusDelta) app.applySummaryBonusDelta(d);
+        } else if (action === 'summary-log-open') {
+          var sumScrL = document.getElementById('summary-screen');
+          if (!sumScrL || !sumScrL.classList.contains('active')) return;
+          var lidx = t.getAttribute('data-summary-log-index');
+          if (lidx !== null && app.showSummaryLogModal) app.showSummaryLogModal(parseInt(lidx, 10));
+        } else if (action === 'summary-modal-log-cancel') {
+          if (app.hideSummaryLogModal) app.hideSummaryLogModal();
+        } else if (action === 'summary-modal-log-save') {
+          if (app.applySummaryLogModal) app.applySummaryLogModal();
         }
         return;
       }
