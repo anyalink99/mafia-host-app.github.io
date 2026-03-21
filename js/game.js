@@ -186,6 +186,10 @@
       return x.id === id;
     });
     if (pl && pl.outReason) return;
+    var vs = app.voteSession;
+    if (vs && vs.phase === 'counting' && vs.tieRevote && vs.candidateIds) {
+      if (vs.candidateIds.indexOf(id) === -1) return;
+    }
     if (app.votingOrder.indexOf(id) === -1) {
       app.votingOrder.push(id);
       app.updateVotingUI();
@@ -268,6 +272,15 @@
     return Math.max(0, session.poolTotal - used);
   };
 
+  /** Все остальные кандидаты уже ввели число — остаётся только остаток пула (одно допустимое значение). */
+  app.isLastVoteSlotToFill = function (session, index) {
+    for (var j = 0; j < session.votes.length; j++) {
+      if (j === index) continue;
+      if (session.votes[j] === null || session.votes[j] === undefined) return false;
+    }
+    return true;
+  };
+
   app.finalizeVoteHang = function (ids) {
     for (var hi = 0; hi < ids.length; hi++) {
       var p = app.players.find(function (x) {
@@ -321,6 +334,8 @@
           return null;
         });
         s.tieRevote = true;
+        s.baseVotingOrder = tied.slice();
+        app.votingOrder = tied.slice();
         app.saveState();
         app.showScreen('game-screen');
         app.resetTimer(30);
@@ -348,16 +363,32 @@
     var s = app.voteSession;
     if (!s || s.phase !== 'counting') return;
     var rem = app.voteAvailableForIndex(s, candidateIndex);
-    var cap = Math.min(10, rem);
+    var lastSlot = app.isLastVoteSlotToFill(s, candidateIndex);
+    var cap = lastSlot ? rem : Math.min(10, rem);
     var id = s.candidateIds[candidateIndex];
     var title = document.getElementById('modal-vote-count-title');
     var sub = document.getElementById('modal-vote-count-sub');
     var grid = document.getElementById('modal-vote-count-grid');
     if (!grid) return;
     if (title) title.textContent = 'Голосов за №' + id;
-    if (sub) sub.textContent = '';
+    if (sub) {
+      if (lastSlot) {
+        sub.textContent = 'Осталось только это количество голосов в пуле.';
+        sub.classList.remove('hidden');
+        sub.setAttribute('aria-hidden', 'false');
+      } else {
+        sub.textContent = '';
+        sub.classList.add('hidden');
+        sub.setAttribute('aria-hidden', 'true');
+      }
+    }
+    grid.className = lastSlot
+      ? 'grid grid-cols-1 gap-2 max-w-[12rem] mx-auto'
+      : 'grid grid-cols-4 gap-2';
     grid.innerHTML = '';
-    for (var n = 0; n <= cap; n++) {
+    var from = lastSlot ? rem : 0;
+    var to = lastSlot ? rem : cap;
+    for (var n = from; n <= to; n++) {
       var b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('data-action', 'vote-count-pick');
@@ -385,8 +416,12 @@
     var s = app.voteSession;
     if (!s || s.phase !== 'counting') return;
     var rem = app.voteAvailableForIndex(s, idx);
-    var cap = Math.min(10, rem);
-    if (value < 0 || value > cap) return;
+    if (app.isLastVoteSlotToFill(s, idx)) {
+      if (value !== rem) return;
+    } else {
+      var cap = Math.min(10, rem);
+      if (value < 0 || value > cap) return;
+    }
     s.votes[idx] = value;
     app.saveState();
     app.tryFinalizeVoteRound();

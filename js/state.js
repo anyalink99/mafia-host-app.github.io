@@ -56,7 +56,19 @@ window.MafiaApp = window.MafiaApp || {};
           return pl && !pl.outReason;
         });
       }
-      if (data.voteSession && typeof data.voteSession === 'object') app.voteSession = data.voteSession;
+      if (data.voteSession && typeof data.voteSession === 'object') {
+        app.voteSession = data.voteSession;
+        var vs = app.voteSession;
+        if (
+          vs &&
+          vs.phase === 'counting' &&
+          vs.tieRevote &&
+          Array.isArray(vs.candidateIds) &&
+          vs.candidateIds.length
+        ) {
+          app.votingOrder = vs.candidateIds.slice();
+        }
+      }
       if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
       if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
       return true;
