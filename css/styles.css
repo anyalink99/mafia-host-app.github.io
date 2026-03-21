@@ -135,6 +135,40 @@ body {
   align-items: stretch;
 }
 
+/* Компактная строка «Ф: N» только когда ячейка по высоте не тянет две строки */
+.player-cell {
+  container-type: size;
+}
+
+.player-slot__default {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-slot__compact {
+  display: none !important;
+  flex-direction: row;
+}
+
+/* Порог: ниже типичной высоты двух строк (номер + полоса фолов) — одна строка «Ф: N» */
+@container (max-height: 94px) {
+  .player-slot__default {
+    display: none !important;
+  }
+
+  .player-slot__compact {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Крупный номер (serif + leading-none) визуально ниже геометрического центра — чуть опускаем плашку «Ф:» */
+  .player-slot__foul-pill--compact {
+    transform: translateY(0.1875rem);
+  }
+}
+
 .role-icon {
   display: block;
   flex-shrink: 0;

@@ -110,13 +110,17 @@
         statusHtml =
           '<div class="invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent" aria-hidden="true"></div>';
       }
-      var foulClass =
+      var foulClassDefault =
         'font-display text-base font-semibold leading-none tabular-nums sm:text-lg ' +
         (p.fouls >= 3 ? 'text-mafia-blood' : 'text-mafia-cream/95');
+      var foulClassCompact =
+        'font-display text-sm font-semibold leading-none tabular-nums sm:text-base ' +
+        (p.fouls >= 3 ? 'text-mafia-blood' : 'text-mafia-cream/95');
       row.innerHTML =
-        '<button type="button" class="player-slot flex h-full min-h-0 w-full min-w-0 flex-col px-2 pt-2 pb-2 text-center outline-none transition-transform active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-2.5 gap-2 sm:gap-2.5" data-action="player-slot-open" data-player-id="' +
+        '<button type="button" class="player-slot flex h-full min-h-0 w-full min-w-0 flex-col justify-center px-2 pt-2 pb-2 text-center outline-none transition-transform active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-2.5" data-action="player-slot-open" data-player-id="' +
         p.id +
         '">' +
+        '<div class="player-slot__default flex w-full min-h-0 flex-col gap-2 sm:gap-2.5">' +
         '<div class="grid w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
         '<div class="flex min-w-0 justify-end">' +
         statusHtml +
@@ -128,10 +132,23 @@
         '<div class="flex min-h-0 w-full shrink-0 items-baseline justify-center gap-2 rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
         '<span class="text-[9px] font-medium uppercase tracking-[0.16em] text-mafia-gold/55 sm:text-[10px]">Фолы</span>' +
         '<span class="' +
-        foulClass +
+        foulClassDefault +
         '">' +
         p.fouls +
-        '</span></div></button>';
+        '</span></div></div>' +
+        '<div class="player-slot__compact w-full min-h-0 flex-1 justify-between gap-2">' +
+        '<div class="flex min-w-0 min-h-0 flex-1 items-center gap-1.5">' +
+        statusHtml +
+        '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' +
+        p.id +
+        '</span>' +
+        '</div>' +
+        '<div class="player-slot__foul-pill player-slot__foul-pill--compact flex shrink-0 items-center justify-center gap-2 rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
+        '<span class="' +
+        foulClassCompact +
+        '">Ф: ' +
+        p.fouls +
+        '</span></div></div></button>';
       list.appendChild(row);
     });
   };
