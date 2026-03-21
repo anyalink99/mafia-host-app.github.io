@@ -136,19 +136,20 @@
         '">' +
         p.fouls +
         '</span></div></div>' +
-        '<div class="player-slot__compact w-full min-h-0 flex-1 justify-between gap-2">' +
-        '<div class="flex min-w-0 min-h-0 flex-1 items-center gap-1.5">' +
+        '<div class="player-slot__compact grid w-full min-h-0 flex-1 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
+        '<div class="flex min-w-0 justify-start">' +
         statusHtml +
+        '</div>' +
         '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' +
         p.id +
         '</span>' +
-        '</div>' +
+        '<div class="flex min-w-0 justify-end">' +
         '<div class="player-slot__foul-pill player-slot__foul-pill--compact flex shrink-0 items-center justify-center gap-2 rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
         '<span class="' +
         foulClassCompact +
         '">Ф: ' +
         p.fouls +
-        '</span></div></div></button>';
+        '</span></div></div></div></button>';
       list.appendChild(row);
     });
   };

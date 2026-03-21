@@ -147,7 +147,6 @@ body {
 
 .player-slot__compact {
   display: none !important;
-  flex-direction: row;
 }
 
 /* Порог: ниже типичной высоты двух строк (номер + полоса фолов) — одна строка «Ф: N» */
@@ -157,10 +156,8 @@ body {
   }
 
   .player-slot__compact {
-    display: flex !important;
-    flex-direction: row;
+    display: grid !important;
     align-items: center;
-    justify-content: space-between;
   }
 
   /* Крупный номер (serif + leading-none) визуально ниже геометрического центра — чуть опускаем плашку «Ф:» */
