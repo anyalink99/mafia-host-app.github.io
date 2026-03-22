@@ -1,6 +1,6 @@
 // При каждом коммите увеличивайте суффикс CACHE_NAME (v4 → v5 …),
 // иначе клиенты могут долго получать старую статику из кэша.
-var CACHE_NAME = 'mafia-host-static-v4';
+var CACHE_NAME = 'mafia-host-static-v6';
 var ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,10 @@ var ASSETS = [
   './js/tailwind.config.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './audio/У вас 10 секунд.mp3',
+  './audio/Спасибо, не продолжайте.mp3',
+  './audio/У Мафии 10 секунд.mp3',
+  './audio/Мафия познакомилась, мафия удаляется.mp3',
 ];
 
 self.addEventListener('install', function (e) {

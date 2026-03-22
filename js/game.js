@@ -643,6 +643,79 @@
     el.classList.toggle('text-mafia-blood', urgent);
   };
 
+  app.TIMER_VOICE_KEY = 'mafia_host_timer_voice';
+
+  var TIMER_VOICE_FILES = {
+    discuss10: 'У вас 10 секунд.mp3',
+    discuss0: 'Спасибо, не продолжайте.mp3',
+    mafia10: 'У Мафии 10 секунд.mp3',
+    mafia0: 'Мафия познакомилась, мафия удаляется.mp3',
+  };
+
+  function timerVoiceUrl(filename) {
+    return new URL('audio/' + encodeURIComponent(filename), window.location.href).href;
+  }
+
+  app.loadTimerVoicePref = function () {
+    try {
+      var v = localStorage.getItem(app.TIMER_VOICE_KEY);
+      app.timerVoiceEnabled = v === '1';
+    } catch (e) {
+      app.timerVoiceEnabled = false;
+    }
+  };
+
+  app.saveTimerVoicePref = function () {
+    try {
+      localStorage.setItem(app.TIMER_VOICE_KEY, app.timerVoiceEnabled ? '1' : '0');
+    } catch (e) {}
+  };
+
+  app.syncTimerVoiceCheckbox = function () {
+    var cb = document.getElementById('setting-timer-voice');
+    if (cb) cb.checked = !!app.timerVoiceEnabled;
+  };
+
+  app.playTimerVoiceCue = function (kind) {
+    if (!app.timerVoiceEnabled) return;
+    var night =
+      app.getCurrentMusicSlot &&
+      app.getCurrentMusicSlot() === '2' &&
+      app.isMusicPlaying &&
+      app.isMusicPlaying();
+    var filename;
+    if (night) {
+      filename = kind === '10' ? TIMER_VOICE_FILES.mafia10 : TIMER_VOICE_FILES.mafia0;
+      if (app.duckBackgroundMusicForTimerVoice) app.duckBackgroundMusicForTimerVoice();
+    } else {
+      filename = kind === '10' ? TIMER_VOICE_FILES.discuss10 : TIMER_VOICE_FILES.discuss0;
+    }
+    var a = document.getElementById('timer-voice');
+    if (!a) return;
+    a.onended = null;
+    a.onerror = null;
+    var restoreDuck = night;
+    var cueDone = false;
+    function onEndedOrError() {
+      if (cueDone) return;
+      cueDone = true;
+      a.onended = null;
+      a.onerror = null;
+      if (restoreDuck && app.restoreBackgroundMusicVolumeAfterTimerVoice) {
+        app.restoreBackgroundMusicVolumeAfterTimerVoice();
+      }
+    }
+    a.onended = onEndedOrError;
+    a.onerror = onEndedOrError;
+    a.src = timerVoiceUrl(filename);
+    var p = a.play();
+    if (p && typeof p.then === 'function') {
+      p.catch(function () {
+        onEndedOrError();
+      });
+    }
+  };
+
   var TIMER_BTN_BASE =
     'px-3 py-2 sm:px-5 sm:py-3 font-semibold rounded uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out';
   function applyTimerButtonState(running) {
@@ -673,6 +746,12 @@
           const te = document.getElementById('timer');
           if (te) te.textContent = app.timeLeft;
           app.syncTimerAppearance();
+          if (app.timerVoiceEnabled && app.timeLeft === 10) {
+            app.playTimerVoiceCue('10');
+          }
+          if (app.timeLeft === 0 && app.timerVoiceEnabled) {
+            app.playTimerVoiceCue('0');
+          }
           app.saveState();
         } else {
           app.toggleTimer();

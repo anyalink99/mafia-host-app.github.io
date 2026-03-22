@@ -1,3 +1,14 @@
+/* Прокрутка сохраняется, полосы прокрутки не показываем */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 html,
 body {
   height: 100%;
@@ -175,4 +186,93 @@ body {
 #game-screen #voting-order.voting-order-queue {
   font-size: clamp(1.125rem, 4.2vmin, 1.5rem);
   line-height: 1.45;
+}
+
+/* Настройки: чекбокс в стиле приложения (без «белого» системного) */
+input.mafia-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 2px;
+  border: 1px solid rgba(212, 175, 55, 0.32);
+  background-color: #0c0a09;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease-out,
+    background-color 0.15s ease-out,
+    box-shadow 0.15s ease-out,
+    transform 0.12s ease-out;
+}
+
+input.mafia-checkbox:hover {
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.08);
+}
+
+input.mafia-checkbox:focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.35);
+  outline-offset: 2px;
+}
+
+input.mafia-checkbox:checked {
+  background-color: rgba(127, 29, 29, 0.42);
+  border-color: rgba(212, 175, 55, 0.55);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 6.2 5 8.7 9.5 3.3' stroke='%23d4af37' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 0.7rem auto;
+}
+
+input.mafia-checkbox:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* Высота панели трека задаётся в JS (max-height в px) — плавный сдвиг контента снизу */
+.music-item-settings-wrap {
+  overflow: hidden;
+}
+
+.music-item-settings-inner {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.music-item-settings-panel {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.music-item-settings-wrap.is-open .music-item-settings-panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.music-item-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  line-height: 1;
+  color: rgba(212, 175, 55, 0.72);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.music-item-expanded .music-item-chevron {
+  transform: rotate(90deg);
+}
+
+.music-preview-btn.is-playing {
+  border-color: rgba(212, 175, 55, 0.55);
+  color: #d4af37;
+  background-color: rgba(127, 29, 29, 0.35);
 }

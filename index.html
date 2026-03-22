@@ -119,6 +119,13 @@
             <input type="file" id="music-files-slot-2" class="hidden" accept="audio/*" multiple aria-hidden="true">
             <div id="music-list-slot-2"></div>
         </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
+            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                <input type="checkbox" id="setting-timer-voice" class="mafia-checkbox">
+                <span>Озвучка таймера</span>
+            </label>
+        </section>
     </div>
 </div>
 
@@ -364,6 +371,8 @@
 </div>
 
 <audio id="bg-music" preload="none" playsinline></audio>
+<audio id="timer-voice" preload="auto" playsinline></audio>
+<audio id="music-preview" preload="none" playsinline></audio>
 
 <script src="js/state.js"></script>
 <script src="js/music-storage.js"></script>

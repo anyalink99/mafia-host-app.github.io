@@ -33,6 +33,7 @@
   function init() {
     app.attachWebManifest();
     app.loadState();
+    if (app.loadTimerVoicePref) app.loadTimerVoicePref();
     if (app.musicSeedDefaultBundledTracks) app.musicSeedDefaultBundledTracks();
     if (app.initMusic) app.initMusic();
     app.bindClicks();

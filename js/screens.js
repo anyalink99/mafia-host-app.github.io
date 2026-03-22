@@ -70,6 +70,7 @@
   };
 
   app.showScreen = function (screenId) {
+    if (screenId !== 'settings-screen' && app.stopMusicPreview) app.stopMusicPreview();
     if (screenId !== 'vote-screen' && app.hideVoteCountModal) app.hideVoteCountModal();
     if (screenId !== 'game-screen' && app.hidePlayerActionsModal) app.hidePlayerActionsModal();
     if (screenId !== 'summary-screen' && app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
@@ -95,7 +96,10 @@
     if (screenId === 'vote-screen' && app.prepareVoteScreen) app.prepareVoteScreen();
     if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
-    if (screenId === 'settings-screen' && app.renderMusicSettings) app.renderMusicSettings();
+    if (screenId === 'settings-screen') {
+      if (app.renderMusicSettings) app.renderMusicSettings();
+      if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
+    }
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
   };
 

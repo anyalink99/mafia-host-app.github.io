@@ -123,13 +123,19 @@
           const sid = t.getAttribute('data-slot');
           const iid = t.getAttribute('data-item-id');
           if (sid && iid && app.toggleMusicItemExpanded) app.toggleMusicItemExpanded(sid, iid);
+        } else if (action === 'music-preview') {
+          const sid = t.getAttribute('data-slot');
+          const iid = t.getAttribute('data-item-id');
+          if (sid && iid && app.musicPreviewToggle) app.musicPreviewToggle(sid, iid);
         } else if (action === 'music-remove-item') {
           const sid = t.getAttribute('data-slot');
           const iid = t.getAttribute('data-item-id');
           if (sid && iid) {
-            const key = sid === '2' ? '2' : '1';
-            if (app.musicSettingsExpandedId && app.musicSettingsExpandedId[key] === iid) {
-              app.musicSettingsExpandedId[key] = '';
+            if (app.musicSettingsExpandedId) {
+              if (app.musicSettingsExpandedId['1'] === iid || app.musicSettingsExpandedId['2'] === iid) {
+                app.musicSettingsExpandedId['1'] = '';
+                app.musicSettingsExpandedId['2'] = '';
+              }
             }
             app.musicRemoveItem(sid, iid).then(function () {
               if (app.renderMusicSettings) app.renderMusicSettings();
@@ -358,10 +364,21 @@
         if (!inputEl.files || !inputEl.files.length) return;
         app.musicAddFilesToSlot(slot, inputEl.files).then(function (added) {
           var key = String(slot) === '2' ? '2' : '1';
+          var other = key === '2' ? '1' : '2';
           if (added && added.length && app.musicSettingsExpandedId) {
+            var hadOpen = app.musicSettingsExpandedId['1'] || app.musicSettingsExpandedId['2'];
+            app.musicSettingsExpandedId[other] = '';
             app.musicSettingsExpandedId[key] = added[added.length - 1].id;
+            if (hadOpen && app.collapseOpenMusicPanelThen) {
+              app.collapseOpenMusicPanelThen(function () {
+                if (app.renderMusicSettings) app.renderMusicSettings();
+              });
+            } else if (app.renderMusicSettings) {
+              app.renderMusicSettings();
+            }
+          } else if (app.renderMusicSettings) {
+            app.renderMusicSettings();
           }
-          if (app.renderMusicSettings) app.renderMusicSettings();
         });
         inputEl.value = '';
       }
@@ -394,6 +411,11 @@
     document.body.addEventListener('change', function (e) {
       var el = e.target;
       if (!el || !el.getAttribute) return;
+      if (el.id === 'setting-timer-voice') {
+        app.timerVoiceEnabled = !!el.checked;
+        if (app.saveTimerVoicePref) app.saveTimerVoicePref();
+        return;
+      }
       var field = el.getAttribute('data-music-field');
       if (field === 'offset') {
         app.applyMusicFieldChange(el);
