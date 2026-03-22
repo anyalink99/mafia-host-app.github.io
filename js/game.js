@@ -50,37 +50,49 @@
     var m = document.getElementById('modal-player-actions');
     if (!m) return;
     var title = document.getElementById('modal-player-actions-title');
-    var foulBtn = m.querySelector('[data-action="player-modal-foul"]');
-    var voteBtn = m.querySelector('[data-action="player-modal-vote"]');
+    var whenActive = document.getElementById('modal-player-actions-when-active');
+    var whenOut = document.getElementById('modal-player-actions-when-out');
     if (title) title.textContent = 'Игрок №' + id;
     var inQueue = app.votingOrder.indexOf(id) !== -1;
     var out = !!p.outReason;
-    if (foulBtn) {
-      foulBtn.disabled = out;
-      foulBtn.className =
-        'w-full py-3 rounded border font-semibold text-sm uppercase tracking-wider transition-colors ' +
-        (out
-          ? 'border-mafia-border bg-mafia-coal text-mafia-cream/30 cursor-not-allowed'
-          : 'border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream cursor-pointer');
+    if (whenActive && whenOut) {
+      if (out) {
+        whenActive.classList.add('hidden');
+        whenOut.classList.remove('hidden');
+      } else {
+        whenActive.classList.remove('hidden');
+        whenOut.classList.add('hidden');
+      }
     }
-    var canVote = !out && !inQueue;
-    if (voteBtn) {
-      voteBtn.disabled = !canVote;
-      voteBtn.textContent = inQueue ? 'В очереди' : 'Выставить';
-      voteBtn.className =
-        'w-full py-3 rounded border-2 font-semibold text-sm uppercase tracking-wider transition-colors ' +
-        (canVote
-          ? 'border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold cursor-pointer'
-          : 'border-mafia-border bg-mafia-coal text-mafia-cream/35 cursor-not-allowed');
-    }
-    var elims = m.querySelectorAll('[data-action="player-modal-elim"]');
-    var elimOn =
-      'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border ring-2 ring-mafia-gold bg-mafia-blood/45 border-mafia-gold text-mafia-gold transition-colors cursor-pointer';
-    var elimOff =
-      'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer';
-    for (var ei = 0; ei < elims.length; ei++) {
-      var er = elims[ei].getAttribute('data-elim');
-      elims[ei].className = p.outReason === er ? elimOn : elimOff;
+    if (!out) {
+      var foulBtn = m.querySelector('[data-action="player-modal-foul"]');
+      var voteBtn = m.querySelector('[data-action="player-modal-vote"]');
+      if (foulBtn) {
+        foulBtn.disabled = false;
+        foulBtn.className =
+          'w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors';
+      }
+      var voteGold =
+        'w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors';
+      if (voteBtn) {
+        voteBtn.disabled = false;
+        if (inQueue) {
+          voteBtn.textContent = 'Убрать с голосования';
+          voteBtn.className = voteGold;
+        } else {
+          voteBtn.textContent = 'Выставить';
+          voteBtn.className = voteGold;
+        }
+      }
+      var elims = m.querySelectorAll('[data-action="player-modal-elim"]');
+      var elimOn =
+        'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border ring-2 ring-mafia-gold bg-mafia-blood/45 border-mafia-gold text-mafia-gold transition-colors cursor-pointer';
+      var elimOff =
+        'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer';
+      for (var ei = 0; ei < elims.length; ei++) {
+        var er = elims[ei].getAttribute('data-elim');
+        elims[ei].className = p.outReason === er ? elimOn : elimOff;
+      }
     }
     m.dataset.playerId = String(id);
     var nickInp = document.getElementById('modal-player-nick');
@@ -174,7 +186,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-transform active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
+        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
         (out ? ' opacity-[0.55]' : '');
       btn.setAttribute('data-action', 'player-slot-open');
       btn.setAttribute('data-player-id', String(p.id));
@@ -250,6 +262,19 @@
       app.renderPlayers();
       app.saveState();
     }
+  };
+
+  app.removeFromVote = function (id) {
+    var vix = app.votingOrder.indexOf(id);
+    if (vix === -1) return;
+    app.votingOrder.splice(vix, 1);
+    app.updateVotingUI();
+    app.renderPlayers();
+    var voteScr = document.getElementById('vote-screen');
+    if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
+      app.renderVoteScreen();
+    }
+    app.saveState();
   };
 
   app.updateVotingUI = function () {
@@ -596,14 +621,6 @@
       wrap.appendChild(tile);
     }
     app.updateVotingUI();
-  };
-
-  app.clearVoting = function () {
-    app.votingOrder = [];
-    app.voteSession = null;
-    app.updateVotingUI();
-    app.renderPlayers();
-    app.saveState();
   };
 
   app.syncTimerAppearance = function () {

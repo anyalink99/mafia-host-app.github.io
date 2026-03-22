@@ -164,7 +164,6 @@
         <div id="voting-order" class="voting-order-queue text-mafia-cream/80 min-h-[1.5rem] mb-3 font-mono tabular-nums">—</div>
         <div class="flex flex-col gap-2">
             <button type="button" id="btn-go-voting" data-goto="vote-screen" disabled class="w-full py-2.5 bg-mafia-blood/50 border border-mafia-gold/40 text-mafia-gold/50 font-semibold rounded text-sm uppercase tracking-wider cursor-not-allowed transition-all">Голосование</button>
-            <button type="button" data-action="clear-voting" class="w-full py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 rounded text-sm transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" id="btn-clear-voting">Сбросить список</button>
         </div>
     </div>
 </div>
@@ -216,20 +215,25 @@
             <label for="modal-player-nick" class="font-display text-xs text-mafia-gold/90">Псевдоним</label>
             <input type="text" id="modal-player-nick" maxlength="32" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Не указан" class="w-full rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">
         </div>
-        <div class="flex flex-col gap-2">
-            <button type="button" data-action="player-modal-foul" class="w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Фол (+1)</button>
-            <button type="button" data-action="player-modal-vote" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Выставить</button>
+        <div id="modal-player-actions-when-active">
+            <div class="flex flex-col gap-2">
+                <button type="button" data-action="player-modal-foul" class="w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Фол (+1)</button>
+                <button type="button" data-action="player-modal-vote" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Выставить</button>
+            </div>
+            <div class="mt-8 flex flex-wrap justify-center gap-3">
+                <button type="button" data-action="player-modal-elim" data-elim="disqual" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Удалён" aria-label="Удалён">
+                    <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-disqual"/></svg>
+                </button>
+                <button type="button" data-action="player-modal-elim" data-elim="hang" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Казнён" aria-label="Казнён">
+                    <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-hang"/></svg>
+                </button>
+                <button type="button" data-action="player-modal-elim" data-elim="shot" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Убит" aria-label="Убит">
+                    <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-shot"/></svg>
+                </button>
+            </div>
         </div>
-        <div class="mt-8 flex flex-wrap justify-center gap-3">
-            <button type="button" data-action="player-modal-elim" data-elim="disqual" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Удалён" aria-label="Удалён">
-                <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-disqual"/></svg>
-            </button>
-            <button type="button" data-action="player-modal-elim" data-elim="hang" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Казнён" aria-label="Казнён">
-                <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-hang"/></svg>
-            </button>
-            <button type="button" data-action="player-modal-elim" data-elim="shot" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Убит" aria-label="Убит">
-                <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-shot"/></svg>
-            </button>
+        <div id="modal-player-actions-when-out" class="hidden">
+            <button type="button" data-action="player-modal-revive" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Вернуть игрока</button>
         </div>
         <button type="button" data-action="player-modal-save" class="w-full mt-8 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Сохранить</button>
     </div>

@@ -240,6 +240,15 @@
     return 'flex h-9 w-9 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold sm:h-10 sm:w-10';
   }
 
+  /** Компактнее, чем summaryRoleIconWrapClass — для сетки «Подведение итогов». */
+  function summaryRoleGridIconWrapClass(code) {
+    var isMafiaSide = code === 'mafia' || code === 'don';
+    if (isMafiaSide) {
+      return 'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold sm:h-9 sm:w-9';
+    }
+    return 'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold sm:h-9 sm:w-9';
+  }
+
   var SUMMARY_TEAM_UNKNOWN_WRAP =
     'flex h-9 w-9 shrink-0 items-center justify-center rounded border border-mafia-border/80 bg-black/25 text-mafia-gold/90 sm:h-10 sm:w-10';
 
@@ -588,7 +597,7 @@
       var n = app.players.length;
       var rowCount = Math.max(1, Math.ceil(n / 2));
       grid.className =
-        'grid h-full min-h-0 min-w-0 grid-flow-col grid-cols-2 gap-2 overflow-hidden';
+        'grid h-full min-h-0 min-w-0 grid-flow-col grid-cols-2 gap-1.5 overflow-hidden';
       grid.style.gridTemplateRows = 'repeat(' + rowCount + ', minmax(0, 1fr))';
 
       for (var p = 0; p < n; p++) {
@@ -604,7 +613,7 @@
         btn.setAttribute('data-action', 'summary-player-open');
         btn.setAttribute('data-player-id', String(sid));
         btn.className =
-          'player-cell flex h-full min-h-0 min-w-0 w-full cursor-pointer flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5';
+          'player-cell flex h-full min-h-0 min-w-0 w-full cursor-pointer flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-1.5 pt-1.5 pb-0.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2 sm:pt-2 sm:pb-1';
         btn.setAttribute(
           'aria-label',
           nickTrim ? 'Игрок №' + sid + ', псевдоним ' + nickTrim : 'Игрок №' + sid
@@ -618,15 +627,15 @@
         iconWrap.setAttribute('aria-hidden', 'true');
         if (!unlocked) {
           iconWrap.className =
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded border border-mafia-border/80 bg-black/25 text-mafia-gold/90 sm:h-10 sm:w-10';
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-border/80 bg-black/25 text-mafia-gold/90 sm:h-9 sm:w-9';
           iconWrap.innerHTML =
-            '<span class="font-display text-xl font-bold leading-none text-mafia-gold/95 sm:text-2xl">?</span>';
+            '<span class="font-display text-lg font-bold leading-none text-mafia-gold/95 sm:text-xl">?</span>';
         } else {
           var code = app.getEffectiveSummaryRoleCode(sid, p);
           var iconId = summaryRoleCodeToIconId(code);
-          iconWrap.className = summaryRoleIconWrapClass(code);
+          iconWrap.className = summaryRoleGridIconWrapClass(code);
           iconWrap.innerHTML =
-            '<svg class="h-[1.35rem] w-[1.35rem] pointer-events-none sm:h-6 sm:w-6" aria-hidden="true"><use href="#' +
+            '<svg class="h-5 w-5 pointer-events-none sm:h-[1.35rem] sm:w-[1.35rem]" aria-hidden="true"><use href="#' +
             iconId +
             '"/></svg>';
         }
@@ -637,17 +646,17 @@
 
         var numSpan = document.createElement('span');
         numSpan.className =
-          'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl';
+          'font-display text-2xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-3xl';
         numSpan.textContent = '№' + sid;
 
         var bonusInner = document.createElement('span');
         bonusInner.className =
-          'font-display text-sm font-semibold leading-none tabular-nums sm:text-base text-mafia-cream/95';
+          'font-display text-xs font-semibold leading-none tabular-nums sm:text-sm text-mafia-cream/95';
         bonusInner.textContent = 'Д: ' + bonusText;
 
         var pillWrap = document.createElement('div');
         pillWrap.className =
-          'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-2 py-1';
+          'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-1.5 py-0.5 sm:px-2 sm:py-1';
         pillWrap.appendChild(bonusInner);
 
         var rightCol = document.createElement('div');
@@ -659,7 +668,7 @@
         topRow.appendChild(rightCol);
 
         var nickRowClass =
-          'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+          'player-slot-nick mt-0.5 mb-1 min-h-[1.375rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-1.5 py-0.5 text-center font-sans text-xs leading-snug sm:min-h-[1.5rem] sm:px-2 sm:py-1 sm:text-sm ' +
           (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30');
         var nickRow = document.createElement('div');
         nickRow.className = nickRowClass;

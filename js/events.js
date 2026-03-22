@@ -134,8 +134,7 @@
         } else if (action === 'reset-timer') {
           const sec = t.getAttribute('data-seconds');
           if (sec) app.resetTimer(parseInt(sec, 10));
-        } else if (action === 'clear-voting') app.clearVoting();
-        else if (action === 'vote-open-count') {
+        } else if (action === 'vote-open-count') {
           if (window.PointerEvent) return;
           var cix = t.getAttribute('data-candidate-index');
           if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cix, 10));
@@ -176,9 +175,26 @@
               return x.id === pidV;
             });
             var inQV = app.votingOrder.indexOf(pidV) !== -1;
-            if (plV && !plV.outReason && !inQV) {
+            if (plV && !plV.outReason) {
               if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-              app.addToVote(pidV);
+              if (inQV) {
+                if (app.removeFromVote) app.removeFromVote(pidV);
+              } else {
+                app.addToVote(pidV);
+              }
+            }
+          }
+        } else if (action === 'player-modal-revive') {
+          var modalR = document.getElementById('modal-player-actions');
+          var pidR = modalR && modalR.dataset.playerId ? parseInt(modalR.dataset.playerId, 10) : NaN;
+          if (!isNaN(pidR)) {
+            var plR = app.players.find(function (x) {
+              return x.id === pidR;
+            });
+            if (plR && plR.outReason && app.togglePlayerElimination) {
+              var reasonR = plR.outReason;
+              if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+              app.togglePlayerElimination(pidR, reasonR);
             }
           }
         } else if (action === 'player-modal-elim') {
