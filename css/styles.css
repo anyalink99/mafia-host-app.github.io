@@ -276,3 +276,13 @@ input.mafia-checkbox:active:not(:disabled) {
   color: #d4af37;
   background-color: rgba(127, 29, 29, 0.35);
 }
+
+.timer-voice-duck-block--inactive {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+#timer-voice-duck-mul-wrap.timer-voice-duck-mul-wrap--inactive {
+  opacity: 0.45;
+  pointer-events: none;
+}

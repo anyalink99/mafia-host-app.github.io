@@ -4,7 +4,6 @@
   var currentSlot = null;
   var currentPlayItem = null;
   var duckedForTimerVoice = false;
-  var TIMER_VOICE_DUCK_MUL = 0.38;
 
   function getAudio() {
     return document.getElementById('bg-music');
@@ -245,10 +244,17 @@
   };
 
   app.duckBackgroundMusicForTimerVoice = function () {
+    if (!app.timerVoiceDuckEnabled) return;
+    var mul =
+      typeof app.timerVoiceDuckMul === 'number' && !isNaN(app.timerVoiceDuckMul)
+        ? app.timerVoiceDuckMul
+        : 0.38;
+    if (mul < 0.05) mul = 0.05;
+    if (mul > 1) mul = 1;
     var a = getAudio();
     if (!a || a.paused || duckedForTimerVoice) return;
     duckedForTimerVoice = true;
-    a.volume = Math.max(0, a.volume * TIMER_VOICE_DUCK_MUL);
+    a.volume = Math.max(0, a.volume * mul);
   };
 
   app.restoreBackgroundMusicVolumeAfterTimerVoice = function () {
@@ -361,11 +367,11 @@
       if (done) done();
       return;
     }
-    li.classList.remove('music-item-expanded');
     inner.style.maxHeight = 'none';
     var h = inner.scrollHeight;
     inner.style.maxHeight = h + 'px';
     void inner.offsetHeight;
+    li.classList.remove('music-item-expanded');
     inner.style.maxHeight = '0';
     var finished = false;
     function onEnd(e) {
@@ -435,7 +441,7 @@
       app.musicSettingsExpandedId['1'] = '';
       app.musicSettingsExpandedId['2'] = '';
       app.collapseOpenMusicPanelThen(function () {
-        app.renderMusicSettings();
+        if (app.stopMusicPreview) app.stopMusicPreview();
       });
       return;
     }
@@ -467,7 +473,7 @@
     }
     if (had && !itemId) {
       app.collapseOpenMusicPanelThen(function () {
-        app.renderMusicSettings();
+        if (app.stopMusicPreview) app.stopMusicPreview();
       });
       return;
     }
@@ -542,7 +548,7 @@
         escapeHtml(it.name) +
         '</span>' +
         (offPool
-          ? '<span class="text-mafia-cream/45 text-xs flex-shrink-0 uppercase tracking-wider">выкл.</span>'
+          ? '<span data-music-off-badge class="text-mafia-cream/45 text-xs flex-shrink-0 uppercase tracking-wider">выкл.</span>'
           : '') +
         (srcLabel
           ? '<span class="text-mafia-cream/40 text-xs flex-shrink-0">' + escapeHtml(srcLabel) + '</span>'
@@ -591,6 +597,26 @@
     }
     html += '</ul>';
     return html;
+  };
+
+  app.musicSyncEnabledRowAppearance = function (li, enabled) {
+    if (!li) return;
+    li.classList.toggle('opacity-60', !enabled);
+    var btn = li.querySelector('[data-action="music-toggle-item-panel"]');
+    if (!btn) return;
+    var badge = btn.querySelector('[data-music-off-badge]');
+    if (!enabled) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.setAttribute('data-music-off-badge', '');
+        badge.className = 'text-mafia-cream/45 text-xs flex-shrink-0 uppercase tracking-wider';
+        badge.textContent = 'выкл.';
+        var titleEl = btn.querySelector('.truncate.min-w-0');
+        if (titleEl) titleEl.after(badge);
+      }
+    } else if (badge) {
+      badge.remove();
+    }
   };
 
   app.applyMusicFieldChange = function (el) {

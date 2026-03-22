@@ -16,6 +16,8 @@ window.MafiaApp = window.MafiaApp || {};
   app.timerInterval = null;
   app.timeLeft = 60;
   app.timerVoiceEnabled = false;
+  app.timerVoiceDuckEnabled = true;
+  app.timerVoiceDuckMul = 0.38;
   app.canCloseRole = false;
 
   app.gameLog = [];

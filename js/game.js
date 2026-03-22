@@ -644,6 +644,8 @@
   };
 
   app.TIMER_VOICE_KEY = 'mafia_host_timer_voice';
+  app.TIMER_VOICE_DUCK_KEY = 'mafia_host_timer_voice_duck';
+  app.TIMER_VOICE_DUCK_MUL_KEY = 'mafia_host_timer_voice_duck_mul';
 
   var TIMER_VOICE_FILES = {
     discuss10: 'У вас 10 секунд.mp3',
@@ -663,6 +665,28 @@
     } catch (e) {
       app.timerVoiceEnabled = false;
     }
+    app.loadTimerVoiceDuckPrefs();
+  };
+
+  app.loadTimerVoiceDuckPrefs = function () {
+    try {
+      var d = localStorage.getItem(app.TIMER_VOICE_DUCK_KEY);
+      app.timerVoiceDuckEnabled = d !== '0';
+    } catch (e) {
+      app.timerVoiceDuckEnabled = true;
+    }
+    try {
+      var m = parseFloat(localStorage.getItem(app.TIMER_VOICE_DUCK_MUL_KEY));
+      if (!isNaN(m)) {
+        if (m < 0.05) m = 0.05;
+        if (m > 1) m = 1;
+        app.timerVoiceDuckMul = m;
+      } else {
+        app.timerVoiceDuckMul = 0.38;
+      }
+    } catch (e) {
+      app.timerVoiceDuckMul = 0.38;
+    }
   };
 
   app.saveTimerVoicePref = function () {
@@ -671,9 +695,42 @@
     } catch (e) {}
   };
 
+  app.saveTimerVoiceDuckPrefs = function () {
+    try {
+      localStorage.setItem(app.TIMER_VOICE_DUCK_KEY, app.timerVoiceDuckEnabled ? '1' : '0');
+      localStorage.setItem(app.TIMER_VOICE_DUCK_MUL_KEY, String(app.timerVoiceDuckMul));
+    } catch (e) {}
+  };
+
   app.syncTimerVoiceCheckbox = function () {
     var cb = document.getElementById('setting-timer-voice');
     if (cb) cb.checked = !!app.timerVoiceEnabled;
+    if (app.syncTimerVoiceDuckControls) app.syncTimerVoiceDuckControls();
+  };
+
+  app.syncTimerVoiceDuckControls = function () {
+    var voiceOn = !!app.timerVoiceEnabled;
+    var duckCb = document.getElementById('setting-timer-voice-duck');
+    var mulInp = document.getElementById('setting-timer-voice-duck-mul');
+    var mulLabel = document.getElementById('setting-timer-voice-duck-mul-label');
+    var block = document.getElementById('timer-voice-duck-block');
+    if (duckCb) {
+      duckCb.checked = !!app.timerVoiceDuckEnabled;
+      duckCb.disabled = !voiceOn;
+    }
+    var mul = typeof app.timerVoiceDuckMul === 'number' ? app.timerVoiceDuckMul : 0.38;
+    if (mulInp) {
+      mulInp.value = String(mul);
+      mulInp.disabled = !voiceOn || !app.timerVoiceDuckEnabled;
+    }
+    if (mulLabel) mulLabel.textContent = Math.round(mul * 100) + '%';
+    if (block) {
+      block.classList.toggle('timer-voice-duck-block--inactive', !voiceOn);
+    }
+    var mulWrap = document.getElementById('timer-voice-duck-mul-wrap');
+    if (mulWrap) {
+      mulWrap.classList.toggle('timer-voice-duck-mul-wrap--inactive', voiceOn && !app.timerVoiceDuckEnabled);
+    }
   };
 
   app.playTimerVoiceCue = function (kind) {
@@ -684,9 +741,10 @@
       app.isMusicPlaying &&
       app.isMusicPlaying();
     var filename;
+    var shouldDuck = night && app.timerVoiceDuckEnabled;
     if (night) {
       filename = kind === '10' ? TIMER_VOICE_FILES.mafia10 : TIMER_VOICE_FILES.mafia0;
-      if (app.duckBackgroundMusicForTimerVoice) app.duckBackgroundMusicForTimerVoice();
+      if (shouldDuck && app.duckBackgroundMusicForTimerVoice) app.duckBackgroundMusicForTimerVoice();
     } else {
       filename = kind === '10' ? TIMER_VOICE_FILES.discuss10 : TIMER_VOICE_FILES.discuss0;
     }
@@ -694,7 +752,7 @@
     if (!a) return;
     a.onended = null;
     a.onerror = null;
-    var restoreDuck = night;
+    var restoreDuck = shouldDuck;
     var cueDone = false;
     function onEndedOrError() {
       if (cueDone) return;

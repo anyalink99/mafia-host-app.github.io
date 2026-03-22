@@ -405,6 +405,17 @@
 
     document.body.addEventListener('input', function (e) {
       var el = e.target;
+      if (el && el.id === 'setting-timer-voice-duck-mul') {
+        var v = parseFloat(el.value);
+        if (isNaN(v)) return;
+        if (v < 0.05) v = 0.05;
+        if (v > 1) v = 1;
+        app.timerVoiceDuckMul = v;
+        if (app.saveTimerVoiceDuckPrefs) app.saveTimerVoiceDuckPrefs();
+        var lab = document.getElementById('setting-timer-voice-duck-mul-label');
+        if (lab) lab.textContent = Math.round(v * 100) + '%';
+        return;
+      }
       if (!el || !el.getAttribute || el.getAttribute('data-music-field') !== 'volume') return;
       app.applyMusicFieldChange(el);
     });
@@ -414,6 +425,13 @@
       if (el.id === 'setting-timer-voice') {
         app.timerVoiceEnabled = !!el.checked;
         if (app.saveTimerVoicePref) app.saveTimerVoicePref();
+        if (app.syncTimerVoiceDuckControls) app.syncTimerVoiceDuckControls();
+        return;
+      }
+      if (el.id === 'setting-timer-voice-duck') {
+        app.timerVoiceDuckEnabled = !!el.checked;
+        if (app.saveTimerVoiceDuckPrefs) app.saveTimerVoiceDuckPrefs();
+        if (app.syncTimerVoiceDuckControls) app.syncTimerVoiceDuckControls();
         return;
       }
       var field = el.getAttribute('data-music-field');
@@ -430,7 +448,7 @@
         var slot = li.getAttribute('data-music-slot');
         if (!id || !slot) return;
         app.musicUpdateItem(slot, id, { enabled: el.checked });
-        if (app.renderMusicSettings) app.renderMusicSettings();
+        if (app.musicSyncEnabledRowAppearance) app.musicSyncEnabledRowAppearance(li, el.checked);
       }
     });
   };
