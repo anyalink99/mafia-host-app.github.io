@@ -149,6 +149,7 @@
           if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
           if (app.hideVoteCountModal) app.hideVoteCountModal();
         } else if (action === 'player-slot-open') {
+          if (app._lastGestureTs && Date.now() - app._lastGestureTs < 400) return;
           const sid = t.getAttribute('data-player-id');
           if (sid && app.showPlayerActionsModal) {
             app.showPlayerActionsModal(parseInt(sid, 10));
@@ -243,6 +244,99 @@
       },
       { passive: false }
     );
+
+    (function initPlayerGestures() {
+      var LONG_PRESS_MS = 450;
+      var SWIPE_Y_MIN = 30;
+      var TAP_MOVE_MAX = 15;
+
+      var g = { active: false, pid: null, touchId: -1, x0: 0, y0: 0, timer: null, fired: false };
+
+      function pidFromEl(el) {
+        var btn = el && el.closest ? el.closest('[data-action="player-slot-open"]') : null;
+        if (!btn) return null;
+        var v = btn.getAttribute('data-player-id');
+        return v ? parseInt(v, 10) : null;
+      }
+
+      function reset() {
+        if (g.timer) { clearTimeout(g.timer); g.timer = null; }
+        g.active = false;
+        g.pid = null;
+        g.touchId = -1;
+        g.fired = false;
+      }
+
+      function findTouch(list, id) {
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].identifier === id) return list[i];
+        }
+        return null;
+      }
+
+      document.body.addEventListener('touchstart', function (e) {
+        if (g.active) return;
+        var gs = document.getElementById('game-screen');
+        if (!gs || !gs.classList.contains('active')) return;
+        var pid = pidFromEl(e.target);
+        if (pid === null) return;
+        var t = e.touches[0];
+        g.active = true;
+        g.pid = pid;
+        g.touchId = t.identifier;
+        g.x0 = t.clientX;
+        g.y0 = t.clientY;
+        g.fired = false;
+        var capturedPid = pid;
+        g.timer = setTimeout(function () {
+          g.timer = null;
+          if (!g.active || g.fired) return;
+          g.fired = true;
+          var inQ = app.votingOrder.indexOf(capturedPid) !== -1;
+          if (inQ) app.removeFromVote(capturedPid);
+          else app.addToVote(capturedPid);
+          if (navigator.vibrate) navigator.vibrate(40);
+        }, LONG_PRESS_MS);
+      }, { passive: true });
+
+      document.body.addEventListener('touchmove', function (e) {
+        if (!g.active || g.fired) return;
+        var t = findTouch(e.touches, g.touchId);
+        if (!t) { reset(); return; }
+        var dy = t.clientY - g.y0;
+        var dx = t.clientX - g.x0;
+        if (Math.abs(dy) > TAP_MOVE_MAX || Math.abs(dx) > TAP_MOVE_MAX) {
+          if (g.timer) { clearTimeout(g.timer); g.timer = null; }
+        }
+      }, { passive: true });
+
+      document.body.addEventListener('touchend', function (e) {
+        if (!g.active) return;
+        var t = findTouch(e.changedTouches, g.touchId);
+        if (!t) return;
+        if (g.timer) { clearTimeout(g.timer); g.timer = null; }
+        var pid = g.pid;
+        var fired = g.fired;
+        var dy = t.clientY - g.y0;
+        var dx = t.clientX - g.x0;
+        reset();
+        if (fired) {
+          app._lastGestureTs = Date.now();
+          e.preventDefault();
+          return;
+        }
+        if (Math.abs(dy) >= SWIPE_Y_MIN && Math.abs(dy) > Math.abs(dx)) {
+          app._lastGestureTs = Date.now();
+          e.preventDefault();
+          if (dy < 0) app.addFoul(pid);
+          else app.removeFoul(pid);
+          if (navigator.vibrate) navigator.vibrate(25);
+          return;
+        }
+      }, { passive: false });
+
+      document.body.addEventListener('touchcancel', function () { reset(); }, { passive: true });
+    })();
 
     function bindMusicFileInputs() {
       function addFromSettings(slot, inputEl) {

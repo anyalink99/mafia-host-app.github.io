@@ -133,6 +133,10 @@ body {
   align-items: stretch;
 }
 
+.player-cell {
+  touch-action: none;
+}
+
 .player-slot__row {
   align-items: center;
 }
@@ -164,7 +168,7 @@ body {
 #game-screen #timer {
   line-height: 1;
   font-weight: 700;
-  font-size: 2.25rem;
+  font-size: clamp(2.75rem, 2rem + 3.2vmin, 4rem);
 }
 
 #game-screen #voting-order.voting-order-queue {

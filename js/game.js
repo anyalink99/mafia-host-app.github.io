@@ -247,6 +247,16 @@
     app.saveState();
   };
 
+  app.removeFoul = function (id) {
+    var p = app.players.find(function (x) {
+      return x.id === id;
+    });
+    if (!p || p.outReason || p.fouls <= 0) return;
+    p.fouls--;
+    app.renderPlayers();
+    app.saveState();
+  };
+
   app.addToVote = function (id) {
     var pl = app.players.find(function (x) {
       return x.id === id;
