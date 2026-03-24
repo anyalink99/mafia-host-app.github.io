@@ -144,6 +144,14 @@
         } else if (action === 'reset-timer') {
           const sec = t.getAttribute('data-seconds');
           if (sec) app.resetTimer(parseInt(sec, 10));
+        } else if (action === 'export-copy-text') {
+          var sumScrEx = document.getElementById('summary-screen');
+          if (!sumScrEx || !sumScrEx.classList.contains('active')) return;
+          if (app.copyGameExportToClipboard) app.copyGameExportToClipboard();
+        } else if (action === 'export-download-csv') {
+          var sumScrCsv = document.getElementById('summary-screen');
+          if (!sumScrCsv || !sumScrCsv.classList.contains('active')) return;
+          if (app.downloadGameExportCsv) app.downloadGameExportCsv();
         } else if (action === 'vote-open-count') {
           if (window.PointerEvent) return;
           var cix = t.getAttribute('data-candidate-index');
@@ -212,6 +220,7 @@
           var modalE = document.getElementById('modal-player-actions');
           var pidE = modalE && modalE.dataset.playerId ? parseInt(modalE.dataset.playerId, 10) : NaN;
           var reasonE = t.getAttribute('data-elim');
+          if (reasonE === 'hang' && app.votingOrder && app.votingOrder.indexOf(pidE) === -1) return;
           if (!isNaN(pidE) && reasonE && app.togglePlayerElimination) {
             if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
             app.togglePlayerElimination(pidE, reasonE);
@@ -233,7 +242,14 @@
           var sumScrL = document.getElementById('summary-screen');
           if (!sumScrL || !sumScrL.classList.contains('active')) return;
           var lidx = t.getAttribute('data-summary-log-index');
-          if (lidx !== null && app.showSummaryLogModal) app.showSummaryLogModal(parseInt(lidx, 10));
+          var skipK = t.getAttribute('data-summary-skip-key');
+          var lidxNum = lidx !== null ? parseInt(lidx, 10) : NaN;
+          if ((skipK === null || skipK === '') && lidxNum === -1) skipK = 'lead';
+          if (skipK !== null && skipK !== '' && app.showSummaryLogModal) {
+            app.showSummaryLogModal(lidxNum, skipK);
+          } else if (lidx !== null && app.showSummaryLogModal) {
+            app.showSummaryLogModal(lidxNum, null);
+          }
         } else if (action === 'summary-modal-log-cancel') {
           if (app.hideSummaryLogModal) app.hideSummaryLogModal();
         } else if (action === 'summary-modal-log-save') {

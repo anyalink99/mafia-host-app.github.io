@@ -1,4 +1,7 @@
 (function (app) {
+  var SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT =
+    '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено';
+
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, '&amp;')
@@ -159,7 +162,25 @@
     inp.value = v % 1 === 0 ? String(Math.round(v)) : String(v).replace('.', ',');
   };
 
-  app.formatHistoryItemAuto = function (e) {
+  app.formatHistoryItemAuto = function (e, roundNum) {
+    function formatSeatNums(ids) {
+      if (!ids || !ids.length) return '';
+      var out = [];
+      for (var si = 0; si < ids.length; si++) {
+        out.push('№' + ids[si]);
+      }
+      return out.join(', ');
+    }
+    function raiseAllHeadFromTiedCount(n) {
+      if (n === 2) return 'Поднятие обоих';
+      return 'Поднятие всех';
+    }
+    function hangElimPhrase(ids) {
+      var n = ids && ids.length ? ids.length : 0;
+      if (n === 0) return '';
+      if (n === 1) return 'казнён ' + formatSeatNums(ids);
+      return 'казнены ' + formatSeatNums(ids);
+    }
     function voteLine(candidateIds, votes) {
       if (!candidateIds || !candidateIds.length) return '';
       var parts = [];
@@ -168,61 +189,90 @@
       }
       return 'Счёт: ' + parts.join('; ') + '.';
     }
+    function voteRoundHead(isRevote) {
+      var head = isRevote ? 'Переголосование' : 'Голосование';
+      if (typeof roundNum === 'number' && roundNum > 0) head += ' #' + roundNum;
+      return head;
+    }
     if (e.type === 'vote_hang') {
-      var nums = (e.eliminatedIds || []).join(', №');
-      var ra = e.viaRaiseAll ? ' (после поднятия всех)' : '';
+      var elimIds = e.eliminatedIds || [];
+      var raCount = (e.candidateIds || elimIds).length;
+      var ra = '';
+      if (e.viaRaiseAll) {
+        ra = raCount === 2 ? ' (после поднятия обоих)' : ' (после поднятия всех)';
+      }
       var vlh = voteLine(e.candidateIds, e.votes);
       if (
         e.viaRaiseAll &&
         typeof e.raiseAllVotes === 'number' &&
         typeof e.raiseAllPoolTotal === 'number'
       ) {
+        var headRa = raiseAllHeadFromTiedCount((e.candidateIds || elimIds).length);
+        if (typeof roundNum === 'number' && roundNum > 0) headRa += ' #' + roundNum;
         return (
-          'Поднятие всех — ' +
+          headRa +
+          ' — ' +
           e.raiseAllVotes +
           '/' +
           e.raiseAllPoolTotal +
-          ' голосов, большинство набрано, казнены №' +
-          nums +
+          ' голосов, большинство набрано, ' +
+          hangElimPhrase(elimIds) +
           '.'
         );
       }
-      var hangHead = e.tieRevote ? 'Переголосование' : 'Голосование';
-      return hangHead + ra + ' — казнены №' + nums + (vlh ? '. ' + vlh : '');
+      var hangHead = voteRoundHead(e.tieRevote);
+      return hangHead + ra + ' — ' + hangElimPhrase(elimIds) + (vlh ? '. ' + vlh : '');
     }
     if (e.type === 'vote_tie') {
       var td = (e.tiedIds || []).join(', №');
       var vlt = voteLine(e.candidateIds, e.votes);
-      var tieLabel = e.isRevote ? 'Переголосование' : 'Голосование';
+      var tieLabel = voteRoundHead(e.isRevote);
       return tieLabel + ' — ничья между №' + td + (vlt ? '. ' + vlt : '');
     }
     if (e.type === 'vote_raise_all') {
       return '';
     }
     if (e.type === 'vote_no_elimination') {
+      var tc = (e.tiedIds || []).length;
+      var raHead = raiseAllHeadFromTiedCount(tc > 0 ? tc : 3);
+      var pfx = '';
+      if (typeof roundNum === 'number' && roundNum > 0) pfx = raHead + ' #' + roundNum + ' — ';
+      else pfx = raHead + ' — ';
       if (typeof e.votesCast === 'number' && typeof e.poolTotal === 'number') {
         return (
-          'Поднятие всех — ' +
+          pfx +
           e.votesCast +
           '/' +
           e.poolTotal +
           ' голосов, большинство не набрано, игроки остаются за столом.'
         );
       }
-      return 'Поднятие всех — большинство не набрано, выбывания нет.';
+      return pfx + 'большинство не набрано, выбывания нет.';
     }
     if (e.type === 'elimination') {
+      if (e.reason === 'hang' && e.outsideVoteSingleNominee) {
+        if (typeof roundNum === 'number' && roundNum > 0) {
+          return (
+            '#' +
+            roundNum +
+            ' — Игрок №' +
+            e.playerId +
+            ' — казнён (вне голосования: единственный выставленный)'
+          );
+        }
+        return 'Игрок №' + e.playerId + ' — казнён (вне голосования: единственный выставленный)';
+      }
       var lab = { hang: 'казнён (вне голосования)', shot: 'убит', disqual: 'удалён (фолы / дисквалификация)' };
       return 'Игрок №' + e.playerId + ' — ' + (lab[e.reason] || 'выбыл');
     }
     return typeof e === 'object' ? JSON.stringify(e) : String(e);
   };
 
-  app.formatHistoryItem = function (e) {
+  app.formatHistoryItem = function (e, roundNum) {
     if (e && typeof e.textOverride === 'string') {
       return e.textOverride;
     }
-    return app.formatHistoryItemAuto(e);
+    return app.formatHistoryItemAuto(e, roundNum);
   };
 
   function summaryRoleCodeToIconId(code) {
@@ -362,12 +412,251 @@
 
   function sortedLog() {
     if (!Array.isArray(app.gameLog)) return [];
-    return app.gameLog.slice().sort(function (a, b) {
-      var ta = typeof a.ts === 'number' ? a.ts : 0;
-      var tb = typeof b.ts === 'number' ? b.ts : 0;
+    return app.gameLog
+      .map(function (e, i) {
+        return { e: e, i: i };
+      })
+      .sort(function (a, b) {
+        var ta = typeof a.e.ts === 'number' ? a.e.ts : 0;
+        var tb = typeof b.e.ts === 'number' ? b.e.ts : 0;
+        if (ta !== tb) return ta - tb;
+        return a.i - b.i;
+      })
+      .map(function (x) {
+        return x.e;
+      });
+  }
+
+  app.stableIndexedLog = function (log) {
+    if (!Array.isArray(log)) return [];
+    return log.map(function (e, i) {
+      return { e: e, i: i };
+    }).sort(function (a, b) {
+      var ta = typeof a.e.ts === 'number' ? a.e.ts : 0;
+      var tb = typeof b.e.ts === 'number' ? b.e.ts : 0;
       if (ta !== tb) return ta - tb;
+      return a.i - b.i;
+    });
+  };
+
+  app.parseExportRounds = function (log) {
+    var indexed = app.stableIndexedLog(log);
+    var rounds = [];
+    var j = 0;
+    while (j < indexed.length) {
+      var e = indexed[j].e;
+      var t = e.type;
+      if (t === 'elimination' && e.outsideVoteSingleNominee) {
+        rounds.push({ kind: 'single', events: [e] });
+        j++;
+        continue;
+      }
+      if (t === 'vote_tie' || t === 'vote_raise_all' || t === 'vote_hang' || t === 'vote_no_elimination') {
+        var cluster = [];
+        while (j < indexed.length) {
+          var ee = indexed[j].e;
+          var tt = ee.type;
+          if (tt !== 'vote_tie' && tt !== 'vote_raise_all' && tt !== 'vote_hang' && tt !== 'vote_no_elimination') break;
+          cluster.push(ee);
+          j++;
+          if (tt === 'vote_hang' || tt === 'vote_no_elimination') break;
+        }
+        rounds.push({ kind: 'vote', events: cluster });
+        continue;
+      }
+      j++;
+    }
+    return rounds;
+  };
+
+  app.daytimeRoundContentExists = function (log) {
+    if (!Array.isArray(log)) return false;
+    for (var i = 0; i < log.length; i++) {
+      var ev = log[i];
+      if (!ev) continue;
+      var tt = ev.type;
+      if (
+        tt === 'vote_tie' ||
+        tt === 'vote_hang' ||
+        tt === 'vote_no_elimination' ||
+        tt === 'vote_raise_all'
+      ) {
+        return true;
+      }
+      if (tt === 'elimination' && ev.outsideVoteSingleNominee) return true;
+    }
+    return false;
+  };
+
+  function isDaytimeVoteEvent(e) {
+    if (!e) return false;
+    var tt = e.type;
+    if (tt === 'vote_tie' || tt === 'vote_hang' || tt === 'vote_no_elimination' || tt === 'vote_raise_all') {
+      return true;
+    }
+    return tt === 'elimination' && e.outsideVoteSingleNominee;
+  }
+
+  function isNightKill(e) {
+    return e && e.type === 'elimination' && (e.reason === 'shot' || e.reason === 'disqual');
+  }
+
+  function exportRoundSortKey(round, indexed) {
+    var min = Infinity;
+    for (var i = 0; i < indexed.length; i++) {
+      var evs = round.events;
+      for (var k = 0; k < evs.length; k++) {
+        if (indexed[i].e === evs[k]) min = Math.min(min, i);
+      }
+    }
+    return min === Infinity ? 0 : min;
+  }
+
+  /**
+   * Нужна ли строка «#1 — пропуск» перед дневными раундами: пустой/только ночь до первого дня,
+   * либо только убийства/дисквалы до первого дневного события в хронологии.
+   * Тогда #1 навсегда резервируется под пропуск, первое голосование — #2 и т.д.
+   */
+  app.shouldPrependFirstDaySkip = function (log) {
+    if (!Array.isArray(log)) return false;
+    if (!app.daytimeRoundContentExists(log)) return true;
+    var indexed = app.stableIndexedLog(log);
+    var firstDayIdx = -1;
+    for (var i = 0; i < indexed.length; i++) {
+      if (isDaytimeVoteEvent(indexed[i].e)) {
+        firstDayIdx = i;
+        break;
+      }
+    }
+    if (firstDayIdx <= 0) return false;
+    for (var j = 0; j < firstDayIdx; j++) {
+      var ev = indexed[j].e;
+      if (!ev) return false;
+      if (ev.type === 'elimination' && (ev.reason === 'shot' || ev.reason === 'disqual')) continue;
+      return false;
+    }
+    return true;
+  };
+
+  app.inferRoundsForExport = function (log) {
+    var indexed = app.stableIndexedLog(log);
+    var core = app.parseExportRounds(log);
+    var pieces = [];
+    for (var c = 0; c < core.length; c++) {
+      pieces.push({
+        kind: core[c].kind,
+        events: core[c].events,
+        sortKey: exportRoundSortKey(core[c], indexed),
+      });
+    }
+    if (app.shouldPrependFirstDaySkip(log)) {
+      pieces.push({
+        kind: 'skip',
+        synthetic: true,
+        skipKey: 'lead',
+        events: [],
+        sortKey: -1,
+      });
+    }
+    for (var j = 1; j < indexed.length; j++) {
+      var prev = indexed[j - 1].e;
+      var curr = indexed[j].e;
+      if (isNightKill(prev) && isNightKill(curr)) {
+        pieces.push({
+          kind: 'skip',
+          synthetic: true,
+          skipKey: 'pair-' + j,
+          events: [],
+          sortKey: j - 0.5,
+        });
+      }
+    }
+    pieces.sort(function (a, b) {
+      if (a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
+      if (a.kind === 'skip' && b.kind !== 'skip') return -1;
+      if (a.kind !== 'skip' && b.kind === 'skip') return 1;
       return 0;
     });
+    var out = [];
+    for (var p = 0; p < pieces.length; p++) {
+      var item = pieces[p];
+      var o = {
+        kind: item.kind,
+        events: item.events,
+      };
+      if (item.kind === 'skip') {
+        o.synthetic = true;
+        o.skipKey = item.skipKey;
+      }
+      out.push(o);
+    }
+    return out;
+  };
+
+  function gameLogEntryToRoundNumWeakMap() {
+    var rounds = app.inferRoundsForExport(app.gameLog);
+    var wm = new WeakMap();
+    for (var r = 0; r < rounds.length; r++) {
+      if (rounds[r].synthetic) continue;
+      var evs = rounds[r].events;
+      for (var k = 0; k < evs.length; k++) wm.set(evs[k], r + 1);
+    }
+    return wm;
+  }
+
+  app.getSummarySyntheticFirstDayDisplayText = function () {
+    if (app.summarySyntheticFirstDayLine != null && String(app.summarySyntheticFirstDayLine).trim() !== '') {
+      return String(app.summarySyntheticFirstDayLine);
+    }
+    return SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT;
+  };
+
+  function syntheticPairSkipDefaultText(roundNum) {
+    return '#' + roundNum + ': никто не был выставлен, голосование пропущено';
+  }
+
+  function buildSyntheticSkipRowText(skipKey, roundNum) {
+    if (skipKey === 'lead') return app.getSummarySyntheticFirstDayDisplayText();
+    var o = app.summarySkipLineOverrides && app.summarySkipLineOverrides[skipKey];
+    if (o != null && String(o).trim() !== '') return String(o);
+    return syntheticPairSkipDefaultText(roundNum);
+  }
+
+  function buildSummaryHistoryRows() {
+    var log = sortedLog();
+    var wm = gameLogEntryToRoundNumWeakMap();
+    var merged = app.inferRoundsForExport(app.gameLog);
+    var skipKeyToRn = {};
+    for (var r = 0; r < merged.length; r++) {
+      if (merged[r].kind === 'skip' && merged[r].skipKey) {
+        skipKeyToRn[merged[r].skipKey] = r + 1;
+      }
+    }
+    var rows = [];
+    if (app.shouldPrependFirstDaySkip(app.gameLog)) {
+      rows.push({
+        text: buildSyntheticSkipRowText('lead', skipKeyToRn['lead']),
+        sortedIndex: -1,
+        skipKey: 'lead',
+      });
+    }
+    for (var lix = 0; lix < log.length; lix++) {
+      var entry = log[lix];
+      if (lix > 0 && isNightKill(log[lix - 1]) && isNightKill(entry)) {
+        var pk = 'pair-' + lix;
+        rows.push({
+          text: buildSyntheticSkipRowText(pk, skipKeyToRn[pk]),
+          sortedIndex: -1,
+          skipKey: pk,
+        });
+      }
+      if (!entry || entry.type === 'vote_round_skipped') continue;
+      var rn = wm.get(entry);
+      var txt = app.formatHistoryItem(entry, rn);
+      if (!String(txt).trim()) continue;
+      rows.push({ text: txt, sortedIndex: lix });
+    }
+    return rows;
   }
 
   app.hideSummaryPlayerModal = function () {
@@ -379,40 +668,103 @@
 
   app.hideSummaryLogModal = function () {
     app._summaryLogSortedIndex = null;
+    app._summaryLogSkipKey = null;
     var m = document.getElementById('modal-summary-log');
     if (m && app.modalSetOpen) app.modalSetOpen(m, false);
   };
 
-  app.showSummaryLogModal = function (sortedIndex) {
-    var log = sortedLog();
-    var entry = log[sortedIndex];
-    if (!entry || !app.modalSetOpen) return;
-    app._summaryLogSortedIndex = sortedIndex;
+  app.showSummaryLogModal = function (sortedIndex, skipKey) {
+    if (!app.modalSetOpen) return;
     var m = document.getElementById('modal-summary-log');
     var ta = document.getElementById('modal-summary-log-text');
+    if (skipKey) {
+      app._summaryLogSortedIndex = -1;
+      app._summaryLogSkipKey = skipKey;
+      var rounds = app.inferRoundsForExport(app.gameLog);
+      var rn = 1;
+      for (var ri = 0; ri < rounds.length; ri++) {
+        if (rounds[ri].kind === 'skip' && rounds[ri].skipKey === skipKey) {
+          rn = ri + 1;
+          break;
+        }
+      }
+      if (skipKey === 'lead') {
+        if (ta) ta.value = app.getSummarySyntheticFirstDayDisplayText();
+      } else {
+        var o = app.summarySkipLineOverrides && app.summarySkipLineOverrides[skipKey];
+        var auto = syntheticPairSkipDefaultText(rn);
+        if (ta) ta.value = o != null && String(o).trim() !== '' ? String(o) : auto;
+      }
+      app.modalSetOpen(m, true);
+      return;
+    }
+    var log = sortedLog();
+    var entry = log[sortedIndex];
+    if (!entry) return;
+    app._summaryLogSortedIndex = sortedIndex;
+    app._summaryLogSkipKey = null;
     if (ta) {
-      var auto = app.formatHistoryItemAuto(entry);
+      var wm = gameLogEntryToRoundNumWeakMap();
+      var rn2 = wm.get(entry);
+      var auto = app.formatHistoryItemAuto(entry, rn2);
       ta.value = typeof entry.textOverride === 'string' ? entry.textOverride : auto;
     }
     app.modalSetOpen(m, true);
   };
 
   app.applySummaryLogModal = function () {
+    var sk = app._summaryLogSkipKey;
+    if (sk) {
+      var ta = document.getElementById('modal-summary-log-text');
+      var val = ta ? ta.value : '';
+      if (sk === 'lead') {
+        var trimmed = val.trim();
+        if (trimmed === '' || trimmed === SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT) {
+          app.summarySyntheticFirstDayLine = null;
+        } else {
+          app.summarySyntheticFirstDayLine = val;
+        }
+      } else {
+        if (!app.summarySkipLineOverrides || typeof app.summarySkipLineOverrides !== 'object') {
+          app.summarySkipLineOverrides = {};
+        }
+        var rounds2 = app.inferRoundsForExport(app.gameLog);
+        var rnum = 1;
+        for (var rj = 0; rj < rounds2.length; rj++) {
+          if (rounds2[rj].kind === 'skip' && rounds2[rj].skipKey === sk) {
+            rnum = rj + 1;
+            break;
+          }
+        }
+        var autoPair = syntheticPairSkipDefaultText(rnum);
+        var trimmedPair = val.trim();
+        if (trimmedPair === '' || trimmedPair === autoPair) {
+          delete app.summarySkipLineOverrides[sk];
+        } else {
+          app.summarySkipLineOverrides[sk] = val;
+        }
+      }
+      app.saveState();
+      app.hideSummaryLogModal();
+      app.renderSummary();
+      return;
+    }
     var ix = app._summaryLogSortedIndex;
     if (ix === null || ix === undefined) return;
+    var ta2 = document.getElementById('modal-summary-log-text');
+    var val2 = ta2 ? ta2.value : '';
     var log = sortedLog();
     var entry = log[ix];
     if (!entry) {
       app.hideSummaryLogModal();
       return;
     }
-    var ta = document.getElementById('modal-summary-log-text');
-    var val = ta ? ta.value : '';
-    var auto = app.formatHistoryItemAuto(entry);
-    if (val === auto) {
+    var wm = gameLogEntryToRoundNumWeakMap();
+    var auto = app.formatHistoryItemAuto(entry, wm.get(entry));
+    if (val2 === auto) {
       delete entry.textOverride;
     } else {
-      entry.textOverride = val;
+      entry.textOverride = val2;
     }
     app.saveState();
     app.hideSummaryLogModal();
@@ -543,6 +895,10 @@
     if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
     if (app.summaryHostName === undefined || app.summaryHostName === null) app.summaryHostName = '';
+    if (app.summarySyntheticFirstDayLine === undefined) app.summarySyntheticFirstDayLine = null;
+    if (!app.summarySkipLineOverrides || typeof app.summarySkipLineOverrides !== 'object') {
+      app.summarySkipLineOverrides = {};
+    }
 
     var unlocked = app.summaryWinnerChosen();
 
@@ -558,31 +914,26 @@
 
     var hist = document.getElementById('summary-history');
     var histEmpty = document.getElementById('summary-history-empty');
-    var log = sortedLog();
     if (hist && histEmpty) {
       hist.innerHTML = '';
-      var visibleLog = [];
-      for (var lix = 0; lix < log.length; lix++) {
-        var dt = app.formatHistoryItem(log[lix]);
-        if (dt.trim()) visibleLog.push({ entry: log[lix], sortedIndex: lix });
-      }
-      if (!visibleLog.length) {
+      var rows = buildSummaryHistoryRows();
+      if (!rows.length) {
         histEmpty.style.display = '';
         hist.style.display = 'none';
       } else {
         histEmpty.style.display = 'none';
         hist.style.display = '';
-        for (var vi = 0; vi < visibleLog.length; vi++) {
-          var item = visibleLog[vi];
+        for (var vi = 0; vi < rows.length; vi++) {
+          var row = rows[vi];
           var li = document.createElement('li');
           li.className = 'pl-0.5';
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.setAttribute('data-action', 'summary-log-open');
-          btn.setAttribute('data-summary-log-index', String(item.sortedIndex));
-          var displayText = app.formatHistoryItem(item.entry);
-          btn.textContent = displayText;
-          btn.title = displayText;
+          btn.setAttribute('data-summary-log-index', String(row.sortedIndex));
+          if (row.skipKey) btn.setAttribute('data-summary-skip-key', row.skipKey);
+          btn.textContent = row.text;
+          btn.title = row.text;
           btn.className =
             'line-clamp-2 w-full max-w-full cursor-pointer rounded border border-transparent bg-transparent py-0.5 text-left text-sm leading-snug text-mafia-cream/85 transition-colors hover:border-mafia-border/40 hover:bg-black/15 hover:text-mafia-cream';
           li.appendChild(btn);

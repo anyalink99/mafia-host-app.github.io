@@ -36,6 +36,12 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.summaryHostName = '';
 
+  /** Ручная правка текста синтетической строки «пропуск дня 1» в «Ход игры»; null = стандартный текст. */
+  app.summarySyntheticFirstDayLine = null;
+
+  /** Ручные правки текста синтетических строк «пропуск» между двумя ночными вылетами (ключ pair-<индекс>). */
+  app.summarySkipLineOverrides = {};
+
   app.saveState = function () {
     try {
       const payload = {
@@ -53,6 +59,8 @@ window.MafiaApp = window.MafiaApp || {};
         bonusNoteByPlayerId: app.bonusNoteByPlayerId,
         bestMoveByPlayerId: app.bestMoveByPlayerId,
         summaryHostName: app.summaryHostName,
+        summarySyntheticFirstDayLine: app.summarySyntheticFirstDayLine,
+        summarySkipLineOverrides: app.summarySkipLineOverrides,
       };
       localStorage.setItem(app.STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -105,6 +113,9 @@ window.MafiaApp = window.MafiaApp || {};
       if (data.gameLog && Array.isArray(data.gameLog)) app.gameLog = data.gameLog;
       else if (data.gameHistory && Array.isArray(data.gameHistory)) app.gameLog = data.gameHistory;
       else app.gameLog = [];
+      app.gameLog = app.gameLog.filter(function (ev) {
+        return ev && ev.type !== 'vote_round_skipped';
+      });
       if (data.playerRoleOverrides && typeof data.playerRoleOverrides === 'object' && !Array.isArray(data.playerRoleOverrides)) {
         app.playerRoleOverrides = data.playerRoleOverrides;
       } else app.playerRoleOverrides = {};
@@ -132,6 +143,11 @@ window.MafiaApp = window.MafiaApp || {};
       } else app.bestMoveByPlayerId = {};
       if (typeof data.summaryHostName === 'string') app.summaryHostName = data.summaryHostName;
       else app.summaryHostName = '';
+      if (typeof data.summarySyntheticFirstDayLine === 'string') app.summarySyntheticFirstDayLine = data.summarySyntheticFirstDayLine;
+      else app.summarySyntheticFirstDayLine = null;
+      if (data.summarySkipLineOverrides && typeof data.summarySkipLineOverrides === 'object' && !Array.isArray(data.summarySkipLineOverrides)) {
+        app.summarySkipLineOverrides = data.summarySkipLineOverrides;
+      } else app.summarySkipLineOverrides = {};
       if (!app.playerRoleOverrides || !Object.keys(app.playerRoleOverrides).length) {
         if (data.summary && Array.isArray(data.summary.rolesManual)) {
           for (var rmi = 0; rmi < data.summary.rolesManual.length; rmi++) {
@@ -176,6 +192,8 @@ window.MafiaApp = window.MafiaApp || {};
     app.bonusNoteByPlayerId = {};
     app.bestMoveByPlayerId = {};
     app.summaryHostName = '';
+    app.summarySyntheticFirstDayLine = null;
+    app.summarySkipLineOverrides = {};
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.showScreen('menu-screen');

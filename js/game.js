@@ -89,9 +89,24 @@
         'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border ring-2 ring-mafia-gold bg-mafia-blood/45 border-mafia-gold text-mafia-gold transition-colors cursor-pointer';
       var elimOff =
         'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer';
+      var elimHangDisabled =
+        'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border/45 bg-mafia-card/50 text-mafia-cream/30 opacity-55 cursor-not-allowed';
       for (var ei = 0; ei < elims.length; ei++) {
-        var er = elims[ei].getAttribute('data-elim');
-        elims[ei].className = p.outReason === er ? elimOn : elimOff;
+        var elimBtn = elims[ei];
+        var er = elimBtn.getAttribute('data-elim');
+        if (er === 'hang' && !inQueue) {
+          elimBtn.disabled = true;
+          elimBtn.setAttribute('aria-disabled', 'true');
+          elimBtn.title = 'Сначала выставьте в очередь голосования';
+          elimBtn.className = elimHangDisabled;
+          continue;
+        }
+        elimBtn.disabled = false;
+        elimBtn.removeAttribute('aria-disabled');
+        elimBtn.className = p.outReason === er ? elimOn : elimOff;
+        if (er === 'disqual') elimBtn.title = 'Удалён';
+        else if (er === 'hang') elimBtn.title = 'Казнён';
+        else if (er === 'shot') elimBtn.title = 'Убит';
       }
     }
     m.dataset.playerId = String(id);
@@ -135,8 +150,16 @@
       }
       app.pruneGameLogOnRevive(id, reason);
     } else {
+      var poolBefore = app.getActivePlayerCount();
+      var singleNomineeHang =
+        reason === 'hang' && app.votingOrder.length === 1 && app.votingOrder[0] === id;
       p.outReason = reason;
-      app.gameLog.push({ type: 'elimination', ts: Date.now(), playerId: id, reason: reason });
+      var elimEntry = { type: 'elimination', ts: Date.now(), playerId: id, reason: reason };
+      if (singleNomineeHang) {
+        elimEntry.outsideVoteSingleNominee = true;
+        elimEntry.votePoolTotal = poolBefore;
+      }
+      app.gameLog.push(elimEntry);
       var vix = app.votingOrder.indexOf(id);
       if (vix !== -1) {
         app.votingOrder.splice(vix, 1);
@@ -420,6 +443,7 @@
         ts: Date.now(),
         votesCast: value,
         poolTotal: n,
+        tiedIds: s.raiseCandidateIds.slice(),
       });
       app.votingOrder = [];
       app.voteSession = null;
@@ -579,7 +603,9 @@
     if (s.phase === 'raiseAll') {
       if (banner) {
         banner.classList.remove('hidden');
-        banner.textContent = 'Голосование за поднятие всех';
+        var rc = (s.raiseCandidateIds || []).length;
+        banner.textContent =
+          rc === 2 ? 'Голосование за поднятие обоих' : 'Голосование за поднятие всех';
       }
       if (hint) hint.textContent = '';
       wrap.innerHTML = '';

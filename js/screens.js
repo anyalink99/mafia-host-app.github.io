@@ -112,4 +112,26 @@
   app.getAvailableCount = function () {
     return app.roles.length;
   };
+
+  app.showToast = function (message) {
+    var el = document.getElementById('app-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'app-toast';
+      el.className =
+        'fixed bottom-6 left-1/2 z-[100] max-w-[min(90vw,20rem)] -translate-x-1/2 rounded-lg border border-mafia-gold/45 bg-mafia-coal/95 px-4 py-2.5 text-center text-sm text-mafia-cream/95 shadow-lg transition-opacity duration-200 ease-out pointer-events-none opacity-0';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    void el.offsetWidth;
+    el.classList.remove('opacity-0');
+    el.classList.add('opacity-100');
+    clearTimeout(el._toastHide);
+    el._toastHide = setTimeout(function () {
+      el.classList.remove('opacity-100');
+      el.classList.add('opacity-0');
+    }, 2400);
+  };
 })(window.MafiaApp);

@@ -222,6 +222,13 @@
             <div id="summary-roles-grid" class="flex-1 min-h-[12rem] overflow-hidden"></div>
         </section>
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Экспорт</h2>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button type="button" data-action="export-copy-text" class="w-full sm:flex-1 py-2.5 border-2 border-mafia-gold/50 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Скопировать текст</button>
+                <button type="button" data-action="export-download-csv" class="w-full sm:flex-1 py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Экспортировать таблицу</button>
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Ход игры</h2>
             <ul id="summary-history" class="text-sm text-mafia-cream/85 space-y-1.5 list-disc pl-5 marker:text-mafia-gold/60"></ul>
             <p id="summary-history-empty" class="text-sm text-mafia-cream/50">Пока нет записей: голосования и выбывания появятся здесь автоматически.</p>
@@ -394,6 +401,7 @@
 <script src="js/cards.js"></script>
 <script src="js/game.js"></script>
 <script src="js/summary.js"></script>
+<script src="js/export.js"></script>
 <script src="js/events.js"></script>
 <script src="js/main.js"></script>
 </body>
